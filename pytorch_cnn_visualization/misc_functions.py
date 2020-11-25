@@ -14,6 +14,7 @@ from torch.autograd import Variable
 from torchvision import models
 import torch.nn as nn
 
+
 def convert_to_grayscale(im_as_arr):
     """
         Converts 3d image to grayscale
@@ -40,13 +41,13 @@ def save_gradient_images(gradient, file_name):
         gradient (np arr): Numpy array of the gradient with shape (3, 224, 224)
         file_name (str): File name to be exported
     """
-    if not os.path.exists('../pytorch-cnn-visualizations/results'):
-        os.makedirs('../pytorch-cnn-visualizations/results')
+    if not os.path.exists('./results'):
+        os.makedirs('./results')
     # Normalize
     gradient = gradient - gradient.min()
     gradient /= gradient.max()
     # Save image
-    path_to_file = os.path.join('../pytorch-cnn-visualizations/results', file_name + '.jpg')
+    path_to_file = os.path.join('./results', file_name + '.jpg')
     save_image(gradient, path_to_file)
 
 
@@ -59,18 +60,18 @@ def save_class_activation_images(org_img, activation_map, file_name):
         activation_map (numpy arr): Activation map (grayscale) 0-255
         file_name (str): File name of the exported image
     """
-    if not os.path.exists('../pytorch-cnn-visualizations/results'):
-        os.makedirs('../pytorch-cnn-visualizations/results')
+    if not os.path.exists('./results'):
+        os.makedirs('./results')
     # Grayscale activation map
     heatmap, heatmap_on_image = apply_colormap_on_image(org_img, activation_map, 'hsv')
     # Save colored heatmap
-    path_to_file = os.path.join('../pytorch-cnn-visualizations/results', file_name + '_Cam_Heatmap.png')
+    path_to_file = os.path.join('./results', file_name + '_Cam_Heatmap.png')
     save_image(heatmap, path_to_file)
     # Save heatmap on iamge
-    path_to_file = os.path.join('../pytorch-cnn-visualizations/results', file_name + '_Cam_On_Image.png')
+    path_to_file = os.path.join('./results', file_name + '_Cam_On_Image.png')
     save_image(heatmap_on_image, path_to_file)
     # SAve grayscale heatmap
-    path_to_file = os.path.join('../pytorch-cnn-visualizations/results', file_name + '_Cam_Grayscale.png')
+    path_to_file = os.path.join('./results', file_name + '_Cam_Grayscale.png')
     save_image(activation_map, path_to_file)
 
 
@@ -230,9 +231,9 @@ def get_example_params(example_index):
         pretrained_model(Pytorch model): Model to use for the operations
     """
     # Pick one of the examples
-    example_list = (('../input_images/carbonate.png', 0),
-                    ('../input_images/sandstone.png', 2),
-                    ('../input_images/shale.png', 1))
+    example_list = (('./data/input_images/carbonate.png', 0),
+                    ('./data/input_images/sandstone.png', 2),
+                    ('./data/input_images/shale.png', 1))
 
     img_path = example_list[example_index][0]
     target_class = example_list[example_index][1]
@@ -253,7 +254,7 @@ def get_example_params(example_index):
             nn.ReLU(inplace=True),
             nn.Linear(4096, 3),
         )
-    pretrained_model.load_state_dict(torch.load("../alexnet_deeprock.pth"))
+    pretrained_model.load_state_dict(torch.load("./models/alexnet_deeprock.pth"))
     return (original_image,
             prep_img,
             target_class,
