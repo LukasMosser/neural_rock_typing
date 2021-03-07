@@ -48,9 +48,8 @@ def save_checkpoint(epoch, model, optimizer, path, is_best=False):
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict()
     }, filepath)
-    print(is_best)
+
     if is_best:
-        print("BEST!")
         shutil.copyfile(filepath, os.path.join(path, 'best.pth'))
 
 

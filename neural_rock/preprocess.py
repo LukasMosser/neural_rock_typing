@@ -8,9 +8,9 @@ import imageio
 def load_excel():
     columns = ['Location', 'Sample']
     features = ['Mineralogy', 'Dunham_class', 'Lucia_class', 'Macro_Dominant_type', 'Macro_Minor_types']
-    df_dry = pd.read_excel("./data/Data_Sheet_GDrive.xls", "Chapter_3_dry", skiprows=[1])[columns+features]
+    df_dry = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_dry", skiprows=[1])[columns+features]
     df_dry['saturation'] = 'dry'
-    df_wet = pd.read_excel("./data/Data_Sheet_GDrive.xls", "Chapter_3_water saturated", skiprows=[1])[columns+features]
+    df_wet = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_water_saturated", skiprows=[1])[columns+features]
     df_wet['saturation'] = 'wet'
     df = pd.concat([df_dry, df_wet])
     df = df.loc[df["Location"]=='Leg194']
@@ -53,24 +53,53 @@ def load_images_w_rows_in_table(df, label_idx=None, filter_labels=[]):
             imgs.append(img)
             features.append(row[1:-1])
 
-    imgs = np.array(imgs).astype(np.float32)/255.
+    imgs = np.array(imgs).astype(np.float32)
     return imgs, features, df_
 
 
-def make_feature_map(features):
-    pore_type = [val[4] for val in features]
-    modified_label_map = {'IP': 0, 'IX': 1, 'MO': 2, 'VUG': 3, 'WP': 4}
-    class_names = list(modified_label_map.keys())
+def load_image_names_in_rows(df):
+    image_idxs = {}
+    direc = "./data/Leg194/1x"
+    for fname in os.listdir(direc):
+        if fname not in ['WS_FTP.LOG', 'Thumbs.db']:
+            idx, mag = split_fname(fname)
+            if mag in ['1x', '1X'] and idx in df['Sample'].unique():
+                image_idxs[idx] = fname
+
+    df_ = df[df['Sample'].isin(image_idxs.keys())]
+
+    imgs = []
+    features = []
+    for idx, row in tqdm(df_.iterrows()):
+        imgs.append(os.path.join(direc, image_idxs[row[1]]))
+        features.append(row[1:-1])
+
+    return imgs, features, df_
+
+
+
+def make_feature_map_microp(features):
+    modified_label_map = {'IP': 0, 'VUG': 1, 'MO': 2, 'IX': 3, 'WF': 4, 'WP': 4}
+    pore_type = [modified_label_map[val[4]] for val in features]
+    class_names = ['IP', 'VUG', 'MO', 'IX', 'WF-WP']
+    return pore_type, modified_label_map, class_names
+
+
+def make_feature_map_lucia(features):
+    modified_label_map = {'0': 0, '1': 1, '2': 2}
+    pore_type = [modified_label_map[str(val[3])] for val in features]
+    class_names = ['0', '1', '2']
     return pore_type, modified_label_map, class_names
 
 
 def make_feature_map_dunham(features):
-    modified_label_map = {' rDol': 0, 'B': 1, 'B-G': 1, 'FL': 1,
-                          'G': 2, 'G-B': 2, 'G-P': 2, 'P': 3, 'P-G': 3, 'rDol': 0}
+    print(np.unique([val[2] for val in features]))
+    modified_label_map = {'rDol': 0, 'B': 1, 'FL': 2,
+                          'G': 3, 'G-P': 4, 'P': 5, 'P-G': 4}
     pore_type = [modified_label_map[val[2]] for val in features]
     print(np.unique(pore_type, return_counts=True))
 
-    class_names = ['rDol', 'B', 'G', 'P']
+    class_names = ['rDol', 'B', 'FL', 'G', 'G-P,P-G', 'P']
     return pore_type, modified_label_map, class_names
 
 

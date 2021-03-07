@@ -22,7 +22,7 @@ class ThinSectionDataset(Dataset):
         y = self.y[idx]
 
         if self.transform:
-            X = self.transform(X)
+            X = torch.from_numpy(self.transform(image=X.numpy().transpose(1, 2, 0))['image'].transpose(2, 0, 1))
 
         return X, y
 

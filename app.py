@@ -6,133 +6,181 @@ import torch.nn as nn
 import torch
 from torch.autograd import Variable
 from neural_rock.utils import load_checkpoint
-from neural_rock.preprocess import load_excel, load_images_w_rows_in_table, make_feature_map, make_feature_map_dunham
+from neural_rock.preprocess import load_excel, load_images_w_rows_in_table, load_image_names_in_rows, make_feature_map_microp, make_feature_map_dunham, make_feature_map_lucia
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.cam import GradCam
 import matplotlib.pyplot as plt
 import altair as alt
 import pandas as pd
+import albumentations as A
+from sklearn.model_selection import StratifiedShuffleSplit
+import imageio
+
+st.set_page_config(layout='wide', page_title='Thin Section Neural Visualizer')
 
 st.title('Thin Section Neural Visualizer')
 
-MEAN_TRAIN = [0.38162467, 0.4421087, 0.40902838]
-STD_TRAIN = [0.21275578, 0.16988535, 0.21243732]
+MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
+STD_TRAIN = np.array([0.229, 0.224, 0.225])
 
+
+def load_img(path):
+    image = imageio.imread(path).astype(np.float32)
+    return image
 
 @st.cache(allow_output_mutation=True)
-def load_data():
+def load_data(type):
     df = load_excel()
 
-    imgs, features, df_ = load_images_w_rows_in_table(df)
-    image_names = [feat[0] for feat in features]
-    pore_type, modified_label_map, class_names = make_feature_map_dunham(features)
+    imgs, features, df_ = load_image_names_in_rows(df)
+
+    if type == 'Dunham':
+        pore_type, modified_label_map, class_names = make_feature_map_dunham(features)
+        checkpoint = "./runs/_2021-03-05_14-53-35/checkpoints/best.pth"
+
+    elif type == 'Micro Porosity':
+        pore_type, modified_label_map, class_names = make_feature_map_microp(features)
+        checkpoint = "./runs/_2021-03-05_15-50-05/checkpoints/best.pth"
+
+    else:
+        pore_type, modified_label_map, class_names = make_feature_map_lucia(features)
+        checkpoint = "./runs/_2021-03-05_17-13-09/checkpoints/best.pth"
+
+    splitter = StratifiedShuffleSplit(test_size=0.50, random_state=42)
+
+    for train_idx, val_idx in splitter.split(imgs, pore_type):
+        print(train_idx, val_idx)
+        break
+
+    image_names = []
+    for i, feat in enumerate(features):
+        if i in train_idx:
+            image_names.append('{} - train - {}'.format(feat[0], class_names[pore_type[i]]))
+        else:
+            image_names.append('{} - validation - {}'.format(feat[0], class_names[pore_type[i]]))
 
     labels = torch.from_numpy(np.array(pore_type))
 
-    imgs = torch.from_numpy(np.transpose(imgs, (0, 3, 1, 2)))
-    resize = transforms.Resize((imgs.shape[2]//2, imgs.shape[3]//2))
-    transform = transforms.Compose([transforms.Normalize(MEAN_TRAIN, STD_TRAIN),
-                                   resize
-                                    ])
-
-    dataset = ThinSectionDataset(imgs, labels, class_names, transform=transform)
-    return dataset, modified_label_map, resize, image_names, class_names
+    return imgs,  labels, modified_label_map, image_names, class_names, checkpoint
 
 
 @st.cache(allow_output_mutation=True)
-def load_model():
-    model = models.alexnet(pretrained=True)
+def load_model(num_classes, checkpoint):
+    model = models.vgg11(pretrained=True)
 
     model.classifier = nn.Sequential(
-            nn.Dropout(p=0.9),
-            nn.Linear(9216, 128),
+            nn.Dropout(p=0.5),
+            nn.Linear(25088, 1024, bias=True),
             nn.LeakyReLU(inplace=True),
             nn.Dropout(p=0.5),
-            nn.Linear(128, 64),
+            nn.Linear(1024, 256, bias=True),
             nn.LeakyReLU(inplace=True),
-            nn.Linear(64, 4))
+            nn.Linear(256, num_classes, bias=True))
 
-    model, _, _ = load_checkpoint("./runs/_2021-01-28_20-28-29/checkpoints/best.pth", model)
+    model, _, _ = load_checkpoint(checkpoint, model)
     model.eval()
     return model
 
-
-@st.cache(allow_output_mutation=True)
-def compute_images(X, grad_cam, max_classes):
+def compute_images(X, grad_cam, max_classes, resize):
     maps = []
     for i in range(max_classes):
         gb = grad_cam(X, i)
         gb = (gb - np.min(gb)) / (np.max(gb) - np.min(gb))
         gb = resize(torch.from_numpy(gb).unsqueeze(0))[0]
-        maps.append(gb)
+        maps.append(gb.cpu().numpy())
+    maps = np.stack(maps, axis=0)
     return maps
 
 
-model = load_model()
+device = "cuda"
+
 data_load_state = st.text('Loading data...')
-dataset, modified_label_map, resize, image_names, class_names = load_data()
 
 data_load_state.text("Done! (using st.cache)")
 
-image_id = st.sidebar.selectbox("Choose an Image", image_names)
-layer = st.sidebar.slider("Which Layer to Visualize", min_value=0, max_value=13, value=11, step=1)
-class_n = st.sidebar.selectbox("Which Class to Visualize", class_names)
-class_idx = np.argwhere(np.array(class_names) == class_n)[0, 0]
+col1, col2 = st.beta_columns((1, 1))
 
-index = np.argwhere(np.array(image_names) == image_id)[0, 0]
+with col1:
+    problem = st.selectbox("Choose Classifier", ['Dunham', 'Micro Porosity', 'Lucia'])
 
-grad_cam = GradCam(model=model,
-                   feature_module=model.features,
-                   target_layer_names=[str(layer)],
-                   use_cuda=False)
+    image_paths, labels, modified_label_map, image_names, class_names, checkpoint = load_data(problem)
 
-X, lab = dataset[index]
-X = Variable(X.unsqueeze(0), requires_grad=True)
+    image_id = st.selectbox("Choose an Image", image_names)
 
-with torch.no_grad():
-    output = model(X)
+    model = load_model(len(class_names), checkpoint).to(device)
+    layer = st.slider("Which Layer to Visualize", min_value=0, max_value=len(list(model.features.modules()))-2, value=len(list(model.features.modules()))-2, step=1)
+    class_n = st.selectbox("Which Class to Visualize", class_names)
+    class_idx = np.argwhere(np.array(class_names) == class_n)[0, 0]
 
-image_patch = np.transpose(X.data.numpy()[0], (1, 2, 0)) * STD_TRAIN + MEAN_TRAIN
-maps = compute_images(X, grad_cam, len(class_names))
+    index = np.argwhere(np.array(image_names) == image_id)[0, 0]
 
-fig, ax = plt.subplots(1, 2, figsize=(12, 4))
-ax[0].set_title("Image Class {0:}".format(class_names[lab]))
-ax[1].set_title("CAM Activation {0:}".format(class_names[class_idx]))
-ax[0].imshow(image_patch)
-ax[1].imshow(image_patch)
-ax[1].imshow(maps[class_idx], cmap="inferno", alpha=0.5)
-for a in ax:
-    a.set_axis_off()
-st.pyplot(fig)
+    grad_cam = GradCam(model=model,
+                       feature_module=model.features,
+                       target_layer_names=[str(layer)],
+                       use_cuda=True if device is "cuda" else False)
 
-fig, ax = plt.subplots(len(class_names), 3, figsize=(3 * 6, 6 * len(class_names)))
+    X = load_img(image_paths[index])
+    lab = labels[index]
 
-for i in range(len(class_names)):
-    gb = maps[i]
+    transform = A.Compose([A.Normalize(mean=MEAN_TRAIN, std=STD_TRAIN),
+                           A.Resize(X.shape[0] // 2, X.shape[1] // 2)])
 
-    ax[i, 0].set_title("Image Class {0:}".format(class_names[lab]))
-    ax[i, 1].set_title("CAM Activation {0:}".format(class_names[i]))
-    ax[i, 2].set_title("CAM Activation Overlay {0:}".format(class_names[i]))
-    ax[i, 0].imshow(image_patch)
-    ax[i, 1].imshow(gb, cmap="inferno")
+    resize = transforms.Resize((X.shape[0]//2,  X.shape[1]//2))
 
-    ax[i, 2].imshow(image_patch)
-    ax[i, 2].imshow(gb, cmap="inferno", alpha=0.5)
-    for a in ax[i]:
+    X = transform(image=X)['image'].transpose(2, 0, 1)
+
+
+    X = Variable(torch.from_numpy(X).unsqueeze(0), requires_grad=True).to(device)
+
+    with torch.no_grad():
+        output = model(X).to(device)
+
+    image_patch = np.transpose(X.data.cpu().numpy()[0], (1, 2, 0)) * STD_TRAIN + MEAN_TRAIN
+
+    maps = compute_images(X, grad_cam, len(class_names), resize=resize)
+
+with col1:
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+    ax[0].set_title("Image Class {0:}".format(class_names[lab]))
+    ax[1].set_title("CAM Activation {0:}".format(class_names[class_idx]))
+    ax[0].imshow(image_patch)
+    ax[1].imshow(image_patch)
+    ax[1].imshow(maps[class_idx], cmap="inferno", alpha=0.5)
+    for a in ax:
         a.set_axis_off()
-st.pyplot(fig)
+    st.pyplot(fig)
 
-source = pd.DataFrame({
-    'a': class_names,
-    'b': torch.softmax(output, dim=1).numpy().flatten()
-})
+with col2:
+    fig, ax = plt.subplots(len(class_names), 3, figsize=(3 * 6, 6 * len(class_names)))
 
-c = alt.Chart(source).mark_bar().encode(
-    x='a',
-    y='b'
-)
+    for i in range(len(class_names)):
+        gb = maps[i]
 
-st.altair_chart(c, use_container_width=True)
+        ax[i, 0].set_title("Image Class {0:}".format(class_names[lab]))
+        ax[i, 1].set_title("CAM Activation {0:}".format(class_names[i]))
+        ax[i, 2].set_title("CAM Activation Overlay {0:}".format(class_names[i]))
+        ax[i, 0].imshow(image_patch)
+        ax[i, 1].imshow(gb, cmap="inferno")
+
+        ax[i, 2].imshow(image_patch)
+        ax[i, 2].imshow(gb, cmap="inferno", alpha=0.5)
+        for a in ax[i]:
+            a.set_axis_off()
+    st.pyplot(fig)
+
+    source = pd.DataFrame({
+        'a': class_names,
+        'b': torch.softmax(output, dim=1).numpy().flatten()
+    })
+
+    c = alt.Chart(source).mark_bar().encode(
+        x='a',
+        y='b'
+    )
+
+with col1:
+    st.altair_chart(c, use_container_width=True)
 
 
 
