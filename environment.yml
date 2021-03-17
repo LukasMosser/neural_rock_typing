@@ -1,0 +1,22 @@
+name: neural_rock
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - pip
+  - pytest
+  - pytorch
+  - torchvision
+  - cudatoolkit=10.1
+  - scipy
+  - tensorboard
+  - matplotlib
+  - nb_conda_kernels
+  - h5py
+  - scikit-learn
+  - pip:
+    - tqdm
+    - notebook
+    - streamlit

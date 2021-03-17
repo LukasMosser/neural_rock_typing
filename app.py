@@ -36,15 +36,15 @@ def load_data(type):
 
     if type == 'Dunham':
         pore_type, modified_label_map, class_names = make_feature_map_dunham(features)
-        checkpoint = "./runs/_2021-03-05_14-53-35/checkpoints/best.pth"
+        checkpoint = "./runs/Dunham_2021-03-07_17-55-41/checkpoints/best.pth"
 
     elif type == 'Micro Porosity':
         pore_type, modified_label_map, class_names = make_feature_map_microp(features)
-        checkpoint = "./runs/_2021-03-05_15-50-05/checkpoints/best.pth"
+        checkpoint = "./runs/DominantPore_2021-03-10_17-58-37/checkpoints/best.pth"
 
     else:
         pore_type, modified_label_map, class_names = make_feature_map_lucia(features)
-        checkpoint = "./runs/_2021-03-05_17-13-09/checkpoints/best.pth"
+        checkpoint = "./runs/Lucia_2021-03-10_19-12-49/checkpoints/best.pth"
 
     splitter = StratifiedShuffleSplit(test_size=0.50, random_state=42)
 
@@ -76,10 +76,11 @@ def load_model(num_classes, checkpoint):
             nn.Linear(1024, 256, bias=True),
             nn.LeakyReLU(inplace=True),
             nn.Linear(256, num_classes, bias=True))
-
+    print(checkpoint)
     model, _, _ = load_checkpoint(checkpoint, model)
     model.eval()
     return model
+
 
 def compute_images(X, grad_cam, max_classes, resize):
     maps = []
@@ -106,7 +107,7 @@ with col1:
     image_paths, labels, modified_label_map, image_names, class_names, checkpoint = load_data(problem)
 
     image_id = st.selectbox("Choose an Image", image_names)
-
+    print(checkpoint)
     model = load_model(len(class_names), checkpoint).to(device)
     layer = st.slider("Which Layer to Visualize", min_value=0, max_value=len(list(model.features.modules()))-2, value=len(list(model.features.modules()))-2, step=1)
     class_n = st.selectbox("Which Class to Visualize", class_names)
@@ -170,13 +171,13 @@ with col2:
     st.pyplot(fig)
 
     source = pd.DataFrame({
-        'a': class_names,
-        'b': torch.softmax(output, dim=1).numpy().flatten()
+        'class': class_names,
+        'probability': torch.softmax(output, dim=1).cpu().numpy().flatten()
     })
 
     c = alt.Chart(source).mark_bar().encode(
-        x='a',
-        y='b'
+        x='class',
+        y='probability'
     )
 
 with col1:

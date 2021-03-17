@@ -20,15 +20,15 @@ from neural_rock.utils import set_seed, save_checkpoint, create_run_directory, g
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--target", type=str, default="MLE", choices=["Dunham", "DominantPore", "Lucia"])
+    parser.add_argument("--method", type=str, default="MLE", choices=["Dunham", "DominantPore", "Lucia"])
     parser.add_argument("--base_dir", type=str, default="./runs")
     parser.add_argument("--wd", type=float, default=1e-4, help="Which batch_size to use for training")
     parser.add_argument("--lr_init", type=float, default=1e-3, help="Which batch_size to use for training")
     parser.add_argument("--momentum", type=float, default=0.9, help="Which batch_size to use for training")
     parser.add_argument("--dropout", type=float, default=0.5, help="Which batch_size to use for training")
     parser.add_argument("--optimizer", type=str, default="SGD", choices=["SGD"])
-    parser.add_argument("--num_workers", type=int, default=8, help="How many workers to use")
-    parser.add_argument("--batch_size", type=int, default=2, help="Which batch_size to use for training")
+    parser.add_argument("--num_workers", type=int, default=4, help="How many workers to use")
+    parser.add_argument("--batch_size", type=int, default=16, help="Which batch_size to use for training")
     parser.add_argument("--smoketest", action="store_true", help="Which batch_size to use for training")
     parser.add_argument("--epochs", type=int, default=200, help="Which batch_size to use for training")
     parser.add_argument("--store_freq", type=int, default=20, help="How often to store checkpoints")
@@ -40,10 +40,10 @@ def parse_arguments(argv):
     return args
 
 
-def main():
+def main(args):
     set_seed(42, cudnn=True, benchmark=True)
 
-    path = create_run_directory("./runs")
+    path = create_run_directory("./runs", prefix=args.method)
 
     train_step_writer = SummaryWriter(log_dir=os.path.join(path, "tensorboard", "train"))
     val_step_writer = SummaryWriter(log_dir=os.path.join(path, "tensorboard", "val"))
@@ -54,8 +54,12 @@ def main():
 
     imgs, features, df_ = pre.load_images_w_rows_in_table(df)
     imgs = np.array(imgs)*255
-
-    pore_type, modified_label_map, class_names = pre.make_feature_map_lucia(features)
+    if args.method == "Lucia":
+        pore_type, modified_label_map, class_names = pre.make_feature_map_lucia(features)
+    elif args.method == "DominantPore":
+        pore_type, modified_label_map, class_names = pre.make_feature_map_microp(features)
+    else:
+        pore_type, modified_label_map, class_names = pre.make_feature_map_dunham(features)
     pore_type = np.array(pore_type)
 
     splitter = StratifiedShuffleSplit(test_size=0.50, random_state=42)
