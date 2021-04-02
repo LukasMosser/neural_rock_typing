@@ -18,7 +18,7 @@ import neural_rock.preprocess as pre
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.training import train, validate
 from neural_rock.utils import set_seed, save_checkpoint, create_run_directory, get_lr
-
+from neural_rock.model import NeuralRockModel
 
 def visualize_batch(loader, std, mean):
     fig, axarr = plt.subplots(4, 4, figsize=(12, 12))
@@ -44,6 +44,7 @@ def parse_arguments(argv):
     parser.add_argument("--batch_size", type=int, default=16, help="Which batch_size to use for training")
     parser.add_argument("--smoketest", action="store_true", help="Which batch_size to use for training")
     parser.add_argument("--epochs", type=int, default=200, help="Which batch_size to use for training")
+    parser.add_argument("--seed", type=int, default=42, help="Which batch_size to use for training")
     parser.add_argument("--store_freq", type=int, default=20, help="How often to store checkpoints")
     args = parser.parse_args(argv)
 
@@ -62,53 +63,6 @@ def main(args):
     val_step_writer = SummaryWriter(log_dir=os.path.join(path, "tensorboard", "val"))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    df = pre.load_excel()
-
-    imgs, features, df_ = pre.load_images_w_rows_in_table(df)
-    imgs = np.array(imgs)*255
-    if args.method == "Lucia":
-        pore_type, modified_label_map, class_names = pre.make_feature_map_lucia(features)
-    elif args.method == "DominantPore":
-        pore_type, modified_label_map, class_names = pre.make_feature_map_microp(features)
-    else:
-        pore_type, modified_label_map, class_names = pre.make_feature_map_dunham(features)
-    pore_type = np.array(pore_type)
-
-    splitter = StratifiedShuffleSplit(test_size=args.val_split_size, random_state=args.seed)
-
-    for train_idx, val_idx in splitter.split(imgs, pore_type):
-        print(train_idx, val_idx)
-        break
-
-    imgs_train, pore_type_train = imgs[train_idx], pore_type[train_idx]
-    imgs_val, pore_type_val = imgs[val_idx], pore_type[val_idx]
-
-    print("train", np.unique(pore_type_train, return_counts=True))
-    print("val", np.unique(pore_type_val, return_counts=True))
-
-    _, class_frequency = np.unique(pore_type_train, return_counts=True)
-    class_frequency = class_frequency/np.sum(class_frequency)
-
-    weights = torch.from_numpy(1./class_frequency)
-    print(weights)
-    print(np.unique(pore_type_val, return_counts=True))
-
-    del imgs
-
-    X_train_np, y_train_np = pre.create_images_and_labels(imgs_train, pore_type_train)
-    X_val_np, y_val_np = pre.create_images_and_labels(imgs_val, pore_type_val)
-
-    X_train_np = X_train_np.astype(np.uint8)
-    X_val_np = X_val_np.astype(np.uint8)
-
-    mean_train = np.mean(X_train_np, axis=(0, 2, 3))
-    std_train = np.std(X_train_np, axis=(0, 2, 3))
-
-    print(mean_train, std_train)
-
-    del imgs_train
-    del imgs_val
 
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
@@ -131,32 +85,21 @@ def main(args):
         ])
     }
 
-    train_dataset = ThinSectionDataset(torch.from_numpy(X_train_np), torch.from_numpy(y_train_np), class_names, transform=data_transforms['train'])
-    val_dataset = ThinSectionDataset(torch.from_numpy(X_val_np), torch.from_numpy(y_val_np), class_names, transform=data_transforms['val'])
+    train_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.method,
+                                       transform=data_transforms['train'], train=True, seed=args.seed)
+    val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.method,
+                                     transform=data_transforms['val'], train=False, seed=args.seed)
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+    idx_check = [train_id in val_dataset.image_ids for train_id in train_dataset.image_ids]
+    assert not any(idx_check)
 
-    model = models.vgg11(pretrained=True)
-
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=10)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=10)
     visualize_batch(train_loader, mean, std)
     visualize_batch(val_loader, mean, std)
+    len(train_dataset.class_names)
 
-    for param in model.features.parameters():
-        param.requires_grad = False
-
-    model.classifier = nn.Sequential(
-                nn.Dropout(p=0.5),
-                nn.Linear(25088, 1024, bias=True),
-                nn.LeakyReLU(inplace=True),
-                nn.Dropout(p=0.5),
-                nn.Linear(1024, 256, bias=True),
-                nn.LeakyReLU(inplace=True),
-                nn.Linear(256, len(class_names), bias=True))
-
-    model = model.to(device)
-
-    criterion = nn.CrossEntropyLoss(weight=weights.float().to(device))
+    criterion = nn.CrossEntropyLoss()#weight=train_dataset.weights.float().to(device))
 
     # Observe that all parameters are being optimized
     optimizer = optim.Adam(model.classifier.parameters(), lr=3e-4)
@@ -180,7 +123,6 @@ def main(args):
             if sgd_steps % validate_every == 0 or initial:
                 epoch_val_loss, epoch_val_f1, predictions = validate(model, criterion, val_loader, device="cuda", return_predictions=True)
                 val_step_writer.add_scalar("epoch_f1", global_step=sgd_steps, scalar_value=epoch_val_f1)
-                val_step_writer.add_scalar("f1_score", global_step=sgd_steps, scalar_value=epoch_val_f1)
                 val_step_writer.add_scalar("epoch_loss", global_step=sgd_steps, scalar_value=epoch_val_loss)
                 val_step_writer.add_scalar("loss", global_step=sgd_steps, scalar_value=epoch_val_loss)
                 initial = False

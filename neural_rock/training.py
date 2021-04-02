@@ -6,10 +6,10 @@ def train(sgd_steps, model, criterion, optimizer, loader, writer, scheduler=None
     model.train()
 
     running_loss = 0.0
-    running_corrects = 0.0
+    running_f1 = 0.0
     for inputs, labels in loader:
-        inputs = inputs.to(device).float()
-        labels = labels.to(device)
+        inputs = inputs.to(device, non_blocking=True).float()
+        labels = labels.to(device, non_blocking=True).squeeze(1)
 
         optimizer.zero_grad()
 
@@ -22,19 +22,19 @@ def train(sgd_steps, model, criterion, optimizer, loader, writer, scheduler=None
 
         # statistics
         running_loss += loss.item() * inputs.size(0)
-        f1 = f1_score(labels.data.cpu(), preds.cpu(), average='macro')
-        running_corrects += f1 * inputs.size(0)
+        f1 = f1_score(labels.data.cpu(), preds.cpu(), average='micro')
+        running_f1 += f1 * inputs.size(0)
 
         writer.add_scalar("f1_score", global_step=sgd_steps, scalar_value=f1)
-
         writer.add_scalar("loss", global_step=sgd_steps, scalar_value=loss.item())
+
         sgd_steps += 1
 
         if scheduler is not None:
             scheduler.step()
 
     epoch_loss = running_loss / len(loader.dataset)
-    epoch_f1 = running_corrects / len(loader.dataset)
+    epoch_f1 = running_f1 / len(loader.dataset)
 
     return sgd_steps, epoch_loss, epoch_f1
 
@@ -48,8 +48,8 @@ def validate(model, criterion, loader, device="cuda", return_predictions=False):
     predictions = {"labels": [], "predictions": []}
     # Iterate over data.
     for inputs, labels in loader:
-        inputs = inputs.to(device).float()
-        labels = labels.to(device)
+        inputs = inputs.to(device, non_blocking=True).float()
+        labels = labels.to(device, non_blocking=True).squeeze(1)
 
         # forward
         # track history if only in train
@@ -67,7 +67,7 @@ def validate(model, criterion, loader, device="cuda", return_predictions=False):
 
         # statistics
         running_loss += loss.item() * inputs.size(0)
-        f1 = f1_score(labels.data, preds, average='macro')
+        f1 = f1_score(labels.data, preds, average='micro')
         running_corrects += f1 * inputs.size(0)
 
     epoch_loss = running_loss / len(loader.dataset)

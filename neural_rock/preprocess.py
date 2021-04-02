@@ -13,7 +13,7 @@ def load_excel():
     df_wet = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_water_saturated", skiprows=[1])[columns+features]
     df_wet['saturation'] = 'wet'
     df = pd.concat([df_dry, df_wet])
-    df = df.loc[df["Location"]=='Leg194']
+    df = df.loc[df["Location"] == 'Leg194']
     df['Sample'] = df['Sample'].astype(int)
     return df
 
@@ -30,31 +30,35 @@ def split_fname(fname):
     return idx, mag
 
 
-def load_images_w_rows_in_table(df, label_idx=None, filter_labels=[]):
-    image_idxs = {}
-    direc = "./data/Leg194/1x"
-    for fname in os.listdir(direc):
-        if fname not in ['WS_FTP.LOG', 'Thumbs.db']:
-            idx, mag = split_fname(fname)
-            if mag in ['1x', '1X'] and idx in df['Sample'].unique():
-                image_idxs[idx] = fname
+def load_images(path, img_type="Xppl", size="1x"):
+    imgs = {}
+    for fname in os.listdir(os.path.join(path, "img")):
+        name_num, type, ending = fname.split(".")
+        mask_path = os.path.join(path, "ROI", "ROI_"+name_num+".png")#Leg194_72-1x.png
+        if not os.path.exists(mask_path):
+            continue
 
-    df_ = df[df['Sample'].isin(image_idxs.keys())]
+        num, mag = name_num.split("_")[1].split("-")
+        if type.lower() == img_type.lower() and mag.lower() == size.lower():
+            imgs[int(num)] = {"path": os.path.join(path, "img", fname),
+                              "mask_path": mask_path,
+                              "mag": mag.lower(),
+                              "type": type.lower()}
 
-    imgs = []
-    features = []
-    for idx, row in tqdm(df_.iterrows()):
-        img = imageio.imread(os.path.join(direc, image_idxs[row[1]]))
-        if label_idx is not None:
-            if row[label_idx] not in filter_labels:
-                imgs.append(img)
-                features.append(row[1:-1])
-        else:
-            imgs.append(img)
-            features.append(row[1:-1])
 
-    imgs = np.array(imgs).astype(np.float32)
-    return imgs, features, df_
+    return imgs
+
+
+def load_features(images, df):
+    df_ = df[df['Sample'].isin(images.keys())]
+
+    for idx, row in df_.iterrows():
+        num = int(row["Sample"])
+        images[num]["features"] = row[1:-1]
+        images[num]["Lucia"] = images[num]["features"][3]
+        images[num]["Dunham"] = images[num]["features"][2]
+        images[num]["DominantPore"] = images[num]["features"][4]
+    return images, df_
 
 
 def load_image_names_in_rows(df):
@@ -70,12 +74,11 @@ def load_image_names_in_rows(df):
 
     imgs = []
     features = []
-    for idx, row in tqdm(df_.iterrows()):
+    for idx, row in df_.iterrows():
         imgs.append(os.path.join(direc, image_idxs[row[1]]))
         features.append(row[1:-1])
 
     return imgs, features, df_
-
 
 
 def make_feature_map_microp(features):

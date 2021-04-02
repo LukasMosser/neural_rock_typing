@@ -10,7 +10,7 @@ _Carbonate Complexities Group_, 2020
 
 Install the provided conda environment:
 ```bash
-conda env install -f environment.yml
+conda env create -f environment.yml
 ```
 
 # Training Dataset
