@@ -8,10 +8,9 @@ from pytorch_lightning.metrics import F1
 
 
 class NeuralRockModel(pl.LightningModule):
-    def __init__(self, ranges, num_classes, N=16):
+    def __init__(self, num_classes):
         super().__init__()
-        self.N = N
-        self.ranges = ranges
+
         self.model = models.vgg11(pretrained=True)
 
         for param in self.model.features.parameters():
@@ -26,37 +25,49 @@ class NeuralRockModel(pl.LightningModule):
                                 nn.LeakyReLU(inplace=True),
                                 nn.Linear(256, num_classes, bias=True))
 
-        self.f1 = F1(num_classes=num_classes)
+        self.train_f1 = F1(num_classes=num_classes)
+        self.val_f1 = F1(num_classes=num_classes)
 
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
+        y = y.squeeze(1)
 
-        preds = self(x)
+        logits = self.model(x)
+        y_prob = F.log_softmax(logits, dim=1)
 
-        loss = F.binary_cross_entropy_with_logits(preds, y)
+        loss = F.cross_entropy(logits, y)
 
-        self.f1(preds, y)
+        self.train_f1(y_prob, y)
 
-        self.log('train_loss', loss.item(), on_step=True, on_epoch=True, sync_dist=True)
-        self.log('train_f1', self.f1, prog_bar=True, on_step=True, on_epoch=True, sync_dist=True)
+        return {'loss': loss, 'y': y, 'y_prob': y_prob}
 
-        return {'loss': loss}
+    def training_epoch_end(self, outputs):
+        f1 = self.train_f1.compute()
+
+        # Save the metric
+        self.log('train_f1_epoch', f1, prog_bar=True)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        preds = self.model(x)
+        y = y.squeeze(1)
 
-        loss = F.binary_cross_entropy_with_logits(preds, y)
+        logits = self.model(x)
+        y_prob = F.log_softmax(logits, dim=1)
 
-        self.f1(preds, y)
+        loss = F.cross_entropy(logits, y)
 
-        self.log('val_loss', loss.item(), on_step=True, on_epoch=True, sync_dist=True)
-        self.log('val_f1', self.f1, prog_bar=True, on_step=True, on_epoch=True, sync_dist=True)
+        self.val_f1(y_prob, y)
 
-        return {'loss': loss}
+        return {'loss': loss, 'y': y, 'y_prob': y_prob}
+
+    def validation_epoch_end(self, outputs):
+        accuracy = self.val_f1.compute()
+
+        # Save the metric
+        self.log('val_f1_epoch', accuracy, prog_bar=True)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.classifier.parameters(), lr=3e-4, weight_decay=1e-5)
