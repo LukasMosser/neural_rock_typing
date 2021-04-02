@@ -4,18 +4,30 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import albumentations as A
+from sklearn.model_selection import StratifiedShuffleSplit
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision import models
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.model_selection import StratifiedShuffleSplit
-from tqdm import tqdm
+from torchvision import models
+
 import neural_rock.preprocess as pre
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.training import train, validate
 from neural_rock.utils import set_seed, save_checkpoint, create_run_directory, get_lr
+
+
+def visualize_batch(loader, std, mean):
+    fig, axarr = plt.subplots(4, 4, figsize=(12, 12))
+    for dat, _ in loader:
+        break
+    for ax, im in zip(axarr.flatten(), dat.numpy()):
+        im = im.transpose(1, 2, 0)*std+mean
+        ax.imshow(im)
+    plt.show()
 
 
 def parse_arguments(argv):
@@ -26,6 +38,7 @@ def parse_arguments(argv):
     parser.add_argument("--lr_init", type=float, default=1e-3, help="Which batch_size to use for training")
     parser.add_argument("--momentum", type=float, default=0.9, help="Which batch_size to use for training")
     parser.add_argument("--dropout", type=float, default=0.5, help="Which batch_size to use for training")
+    parser.add_argument("--val_split_size", type=float, default=0.5, help="Which batch_size to use for training")
     parser.add_argument("--optimizer", type=str, default="SGD", choices=["SGD"])
     parser.add_argument("--num_workers", type=int, default=4, help="How many workers to use")
     parser.add_argument("--batch_size", type=int, default=16, help="Which batch_size to use for training")
@@ -48,7 +61,7 @@ def main(args):
     train_step_writer = SummaryWriter(log_dir=os.path.join(path, "tensorboard", "train"))
     val_step_writer = SummaryWriter(log_dir=os.path.join(path, "tensorboard", "val"))
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     df = pre.load_excel()
 
@@ -62,7 +75,7 @@ def main(args):
         pore_type, modified_label_map, class_names = pre.make_feature_map_dunham(features)
     pore_type = np.array(pore_type)
 
-    splitter = StratifiedShuffleSplit(test_size=0.50, random_state=42)
+    splitter = StratifiedShuffleSplit(test_size=args.val_split_size, random_state=args.seed)
 
     for train_idx, val_idx in splitter.split(imgs, pore_type):
         print(train_idx, val_idx)
@@ -126,15 +139,8 @@ def main(args):
 
     model = models.vgg11(pretrained=True)
 
-    fig, axarr = plt.subplots(4, 4, figsize=(12, 12))
-
-    for dat, _ in train_loader:
-        break
-
-    for ax, im in zip(axarr.flatten(), dat.numpy()):
-        im = im.transpose(1, 2, 0)*std+mean
-        ax.imshow(im)
-    plt.show()
+    visualize_batch(train_loader, mean, std)
+    visualize_batch(val_loader, mean, std)
 
     for param in model.features.parameters():
         param.requires_grad = False
@@ -153,7 +159,7 @@ def main(args):
     criterion = nn.CrossEntropyLoss(weight=weights.float().to(device))
 
     # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.classifier.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.Adam(model.classifier.parameters(), lr=3e-4)
 
     max_steps = 5000
 
