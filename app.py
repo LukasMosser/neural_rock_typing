@@ -18,7 +18,6 @@ st.title('Thin Section Neural Visualizer')
 MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
 STD_TRAIN = np.array([0.229, 0.224, 0.225])
 
-
 def load_img(path):
     image = imageio.imread(path).astype(np.float32)
     return image
@@ -83,7 +82,14 @@ with col1:
     problem = st.selectbox("Choose Classifier", ['Dunham', 'DominantPore', 'Lucia'])
 
     image_paths, modified_label_map, image_names, class_names = load_data(problem)
-    model = load_model("lightning_logs/version_0/checkpoints/epoch=999-step=2999.ckpt", num_classes=len(class_names))
+
+    if problem == "Lucia":
+        chkpt = "lightning_logs/version_2/checkpoints/epoch=422-step=1265.ckpt"
+    elif problem == "DominantPore":
+        chkpt = "lightning_logs/version_1/checkpoints/epoch=999-step=2999.ckpt"
+    elif problem == "Dunham":
+        chkpt = "lightning_logs/version_4/checkpoints/epoch=656-step=1967.ckpt"
+    model = load_model(chkpt, num_classes=len(class_names))
 
     image_name_map = {}
     image_names = []

@@ -25,8 +25,8 @@ class NeuralRockModel(pl.LightningModule):
                                 nn.LeakyReLU(inplace=True),
                                 nn.Linear(256, num_classes, bias=True))
 
-        self.train_f1 = F1(num_classes=num_classes)
-        self.val_f1 = F1(num_classes=num_classes)
+        self.train_f1 = F1(average='micro', num_classes=num_classes)
+        self.val_f1 = F1(average='micro', num_classes=num_classes)
 
     def forward(self, x):
         return self.model(x)
@@ -36,12 +36,12 @@ class NeuralRockModel(pl.LightningModule):
         y = y.squeeze(1)
 
         logits = self.model(x)
-        y_prob = F.log_softmax(logits, dim=1)
+        y_prob = F.softmax(logits, dim=1)
 
         loss = F.cross_entropy(logits, y)
 
         self.train_f1(y_prob, y)
-
+        self.log('train_loss', loss, on_step=True, on_epoch=True)
         return {'loss': loss, 'y': y, 'y_prob': y_prob}
 
     def training_epoch_end(self, outputs):
@@ -55,19 +55,19 @@ class NeuralRockModel(pl.LightningModule):
         y = y.squeeze(1)
 
         logits = self.model(x)
-        y_prob = F.log_softmax(logits, dim=1)
+        y_prob = F.softmax(logits, dim=1)
 
         loss = F.cross_entropy(logits, y)
 
         self.val_f1(y_prob, y)
-
+        self.log('val_loss', loss, on_step=True, on_epoch=True)
         return {'loss': loss, 'y': y, 'y_prob': y_prob}
 
     def validation_epoch_end(self, outputs):
-        accuracy = self.val_f1.compute()
+        f1 = self.val_f1.compute()
 
         # Save the metric
-        self.log('val_f1_epoch', accuracy, prog_bar=True)
+        self.log('val_f1_epoch', f1, prog_bar=True)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.classifier.parameters(), lr=3e-4, weight_decay=1e-5)

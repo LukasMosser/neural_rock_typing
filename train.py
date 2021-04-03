@@ -56,9 +56,6 @@ def main(args):
                 A.HorizontalFlip(p=0.5),
                 A.Rotate(360, always_apply=True),
                 A.RandomCrop(width=512, height=512),
-                A.ElasticTransform(sigma=25, alpha_affine=25),
-                A.GaussNoise(),
-                A.HueSaturationValue(sat_shift_limit=0, val_shift_limit=50, hue_shift_limit=255, always_apply=True),
                 A.Resize(width=224, height=224),
                 A.Normalize()
     ]),
@@ -68,17 +65,16 @@ def main(args):
         A.Normalize(),
         ])
     }
+    #train_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Malampaya", args.method,
+    #                                   transform=data_transforms['train'], train=True, seed=args.seed)
 
     train_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.method,
                                        transform=data_transforms['train'], train=True, seed=args.seed)
     val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.method,
                                      transform=data_transforms['val'], train=False, seed=args.seed)
 
-    idx_check = [train_id in val_dataset.image_ids for train_id in train_dataset.image_ids]
-    assert not any(idx_check)
-
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=10)
-    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=10)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=10)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4, pin_memory=True, prefetch_factor=10)
 
     visualize_batch(train_loader)
     visualize_batch(val_loader)

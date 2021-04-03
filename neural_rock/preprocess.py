@@ -5,7 +5,7 @@ from tqdm import tqdm
 import imageio
 
 
-def load_excel():
+def load_excel(db_id):
     columns = ['Location', 'Sample']
     features = ['Mineralogy', 'Dunham_class', 'Lucia_class', 'Macro_Dominant_type', 'Macro_Minor_types']
     df_dry = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_dry", skiprows=[1])[columns+features]
@@ -13,8 +13,8 @@ def load_excel():
     df_wet = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_water_saturated", skiprows=[1])[columns+features]
     df_wet['saturation'] = 'wet'
     df = pd.concat([df_dry, df_wet])
-    df = df.loc[df["Location"] == 'Leg194']
-    df['Sample'] = df['Sample'].astype(int)
+    df = df.loc[df["Location"] == db_id]
+    #df['Sample'] = df['Sample'].astype(int)
     return df
 
 
@@ -40,7 +40,11 @@ def load_images(path, img_type="Xppl", size="1x"):
 
         num, mag = name_num.split("_")[1].split("-")
         if type.lower() == img_type.lower() and mag.lower() == size.lower():
-            imgs[int(num)] = {"path": os.path.join(path, "img", fname),
+            try:
+                num = int(num)
+            except ValueError:
+                continue
+            imgs[num] = {"path": os.path.join(path, "img", fname),
                               "mask_path": mask_path,
                               "mag": mag.lower(),
                               "type": type.lower()}
@@ -55,7 +59,7 @@ def load_features(images, df):
     for idx, row in df_.iterrows():
         num = int(row["Sample"])
         images[num]["features"] = row[1:-1]
-        images[num]["Lucia"] = images[num]["features"][3]
+        images[num]["Lucia"] = str(images[num]["features"][3])
         images[num]["Dunham"] = images[num]["features"][2]
         images[num]["DominantPore"] = images[num]["features"][4]
     return images, df_

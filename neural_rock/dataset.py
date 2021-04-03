@@ -20,8 +20,15 @@ class ThinSectionDataset(Dataset):
 
     def _make_dataset(self):
         available_images = pre.load_images(self.path)
+        if self.path.split("/")[-1] == "Leg194":
+            db_id = "Leg194"
+        elif self.path.split("/")[-1] == "Buhasa":
+            db_id = "B"
+        elif self.path.split("/")[-1] == "Malampaya":
+            db_id = "M"
 
-        df = pre.load_excel()
+
+        df = pre.load_excel(db_id)
 
         available_images, df_ = pre.load_features(available_images, df)
 
