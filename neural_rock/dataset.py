@@ -7,11 +7,11 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 
 class ThinSectionDataset(Dataset):
-    def __init__(self, path, label_set, transform=None, seed=42, test_split_size=0.5, train=True):
+    def __init__(self, path, label_set, transform=None, seed=42, test_split_size=0.5, train=True, preload_images=True):
         self.path = path
         self.train = train
         self.label_set = label_set
-
+        self.preload_images = preload_images
         self.transform = transform
         self.seed = seed
         self.test_split_size = test_split_size
@@ -66,11 +66,12 @@ class ThinSectionDataset(Dataset):
             dataset = val_dset
 
         images = {}
-        for key, dset in dataset.items():
-           img = imread(dset['path'])
-           mask = (1-(imread(dset['mask_path']) > 0).astype(np.uint8))
-           img = img * np.repeat(np.expand_dims(mask, axis=-1), 3, axis=-1)
-           images[key] = img
+        if self.preload_images:
+            for key, dset in dataset.items():
+               img = imread(dset['path'])
+               mask = (1-(imread(dset['mask_path']) > 0).astype(np.uint8))
+               img = img * np.repeat(np.expand_dims(mask, axis=-1), 3, axis=-1)
+               images[key] = img
         return dataset, images, class_names, modified_label_map, weights
 
     def __len__(self):
