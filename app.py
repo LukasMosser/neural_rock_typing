@@ -90,7 +90,7 @@ with col1:
     elif problem == "DominantPore":
         chkpt = "lightning_logs/version_1/checkpoints/epoch=999-step=2999.ckpt"
     elif problem == "Dunham":
-        chkpt = "models/Dunham/v1/epoch=9-step=209.ckpt"
+        chkpt = "./data/models/Dunham/v1/epoch=9-step=209.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))
 
     image_name_map = {}
