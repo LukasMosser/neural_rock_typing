@@ -18,6 +18,7 @@ st.title('Thin Section Neural Visualizer')
 MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
 STD_TRAIN = np.array([0.229, 0.224, 0.225])
 
+
 def load_img(path):
     image = imageio.imread(path).astype(np.float32)
     return image
@@ -89,7 +90,7 @@ with col1:
     elif problem == "DominantPore":
         chkpt = "lightning_logs/version_1/checkpoints/epoch=999-step=2999.ckpt"
     elif problem == "Dunham":
-        chkpt = "neural-rock_Dunham/3dxstayr_0/checkpoints/epoch=9-step=209.ckpt"
+        chkpt = "models/Dunham/v1/epoch=9-step=209.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))
 
     image_name_map = {}
