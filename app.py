@@ -60,7 +60,7 @@ def load_model(checkpoint, num_classes=5):
     model.freeze()
     return model
 
-@st.cache
+
 def compute_images(X, grad_cam, max_classes, resize):
     maps = []
     for i in range(max_classes):
