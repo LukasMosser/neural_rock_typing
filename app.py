@@ -56,6 +56,7 @@ def load_model(checkpoint, num_classes=5):
     from neural_rock.model import NeuralRockModel
     model = NeuralRockModel.load_from_checkpoint(checkpoint, num_classes=num_classes)
     model.eval()
+    model.freeze()
     return model
 
 @st.cache
@@ -88,7 +89,7 @@ with col1:
     elif problem == "DominantPore":
         chkpt = "lightning_logs/version_1/checkpoints/epoch=999-step=2999.ckpt"
     elif problem == "Dunham":
-        chkpt = "lightning_logs/version_4/checkpoints/epoch=656-step=1967.ckpt"
+        chkpt = "neural-rock_Dunham/3dxstayr_0/checkpoints/epoch=9-step=209.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))
 
     image_name_map = {}

@@ -6,6 +6,11 @@ Can machines help us understand how to distinguish rock types?
 Gregor Baechle, George Gohn, Lukas Mosser
 _Carbonate Complexities Group_, 2020
 
+## Colab Training
+
+To load a notebook for training a model in Google Colab, follow this link:  
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/]
+
 ## Install Environment
 
 Install the provided conda environment:

@@ -21,3 +21,4 @@ dependencies:
     - notebook
     - streamlit
     - captum
+    - wandb
