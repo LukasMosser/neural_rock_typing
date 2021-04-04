@@ -72,7 +72,7 @@ def compute_images(X, grad_cam, max_classes, resize):
     return maps
 
 
-device = "cpu"
+device = "cuda"
 
 data_load_state = st.text('Loading data...')
 
