@@ -22,3 +22,7 @@ dependencies:
     - streamlit
     - captum
     - wandb
+    - imageio
+    - albumentations
+    - xlrd
+    - pytorch_lightning
