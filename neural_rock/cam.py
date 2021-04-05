@@ -80,7 +80,7 @@ class GradCam:
 
         one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
         one_hot[0][target_category] = 1
-        one_hot = torch.from_numpy(one_hot, device=self.device).requires_grad_(True)
+        one_hot = torch.from_numpy(one_hot).requires_grad_(True).to(self.device)
 
         one_hot = torch.sum(one_hot * output)
 
