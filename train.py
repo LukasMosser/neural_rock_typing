@@ -7,7 +7,7 @@ from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.utils import set_seed
-from neural_rock.model import NeuralRockModel
+from neural_rock.model import NeuralRockModel, NeuralRockModelVGGLinear
 from neural_rock.plot import visualize_batch
 import wandb
 
@@ -15,6 +15,7 @@ import wandb
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--labelset", type=str, default="Dunham", choices=["Dunham", "DominantPore", "Lucia"])
+    parser.add_argument("--model", type=str, default=['VGG_FC'], choices=['VGG_FC', 'VGG_Linear'])
     parser.add_argument("--weight_decay", type=float, default=1e-5, help="Which batch_size to use for training")
     parser.add_argument("--learning_rate", type=float, default=3e-4, help="Which batch_size to use for training")
     parser.add_argument("--dropout", type=float, default=0.5, help="Which batch_size to use for training")
@@ -76,7 +77,10 @@ def main(args):
                          callbacks=[checkpointer],
                          check_val_every_n_epoch=10)
 
-    model = NeuralRockModel(num_classes=len(train_dataset_base.class_names))
+    if args.model == 'VGG_FC':
+        model = NeuralRockModel(len(train_dataset_base.class_names))
+    elif args.model == 'VGG_Linear':
+        model = NeuralRockModelVGGLinear(len(train_dataset_base.class_names))
 
     trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
 
