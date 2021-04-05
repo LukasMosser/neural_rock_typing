@@ -140,8 +140,8 @@ with col1:
 
     model = Model(model.feature_extractor, model.classifier)
     model.to(device)
-    grad_cam = GradCam(model=model,
-                       feature_module=model.feature_extractor,
+    grad_cam = GradCam(model=model.to(device),
+                       feature_module=model.feature_extractor.to(device),
                        target_layer_names=[str(layer)],
                        use_cuda=True if device is "cuda" else False)
 
