@@ -166,7 +166,7 @@ with col1:
         output = model(X).to(device)
 
     image_patch = np.transpose(X.data.cpu().numpy()[0], (1, 2, 0)) * STD_TRAIN + MEAN_TRAIN
-
+    X = X.to(device)
     maps = compute_images(X, grad_cam, len(class_names), resize=resize)
 
 with col1:
