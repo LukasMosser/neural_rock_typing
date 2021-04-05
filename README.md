@@ -3,7 +3,7 @@ Can machines help us understand how to distinguish rock types?
 
 ### Authors
 
-Gregor Baechle, George Gohn, Lukas Mosser
+Gregor Baechle, George Ghon, Lukas Mosser
 _Carbonate Complexities Group_, 2020
 
 ## Colab Training
