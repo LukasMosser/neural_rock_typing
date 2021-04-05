@@ -1,4 +1,5 @@
 import streamlit as st
+import torch.nn as nn
 import numpy as np
 from torchvision import transforms
 import torch
@@ -10,6 +11,22 @@ import altair as alt
 import pandas as pd
 import albumentations as A
 import imageio
+
+import os
+import argparse
+import streamlit as st
+
+parser = argparse.ArgumentParser(description='This app lists animals')
+
+parser.add_argument('--worker', type=str, default="cpu", choices=["cpu", "cuda"],
+                    help="What type of worker")
+try:
+    args = parser.parse_args()
+except SystemExit as e:
+    # This exception will be raised if --help or invalid command line arguments
+    # are used. Currently streamlit prevents the program from exiting normally
+    # so we have to do a hard exit.
+    os._exit(e.code)
 
 st.set_page_config(layout='wide', page_title='Thin Section Neural Visualizer')
 
@@ -72,7 +89,7 @@ def compute_images(X, grad_cam, max_classes, resize):
     return maps
 
 
-device = "cpu"
+device = args.worker
 
 data_load_state = st.text('Loading data...')
 
@@ -104,12 +121,27 @@ with col1:
 
     image_id = image_name_map[image_id]
 
-    layer = st.slider("Which Layer to Visualize", min_value=0, max_value=len(list(model.model.features.modules()))-2, value=len(list(model.model.features.modules()))-2, step=1)
+    layer = st.slider("Which Layer to Visualize", min_value=0, max_value=len(list(model.feature_extractor.modules()))-2, value=len(list(model.feature_extractor.modules()))-2, step=1)
     class_n = st.selectbox("Which Class to Visualize", class_names)
     class_idx = np.argwhere(np.array(class_names) == class_n)[0, 0]
 
-    grad_cam = GradCam(model=model.model,
-                       feature_module=model.model.features,
+    class Model(nn.Module):
+        def __init__(self, feature_extractor, fc):
+            super(Model, self).__init__()
+            self.feature_extractor = feature_extractor
+            self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+            self.fc = fc
+
+        def forward(self, x):
+            x = self.feature_extractor(x)
+            x = self.avgpool(x)
+            x = self.fc(x)
+            return x
+
+    model = Model(model.feature_extractor, model.classifier)
+
+    grad_cam = GradCam(model=model,
+                       feature_module=model.feature_extractor,
                        target_layer_names=[str(layer)],
                        use_cuda=True if device is "cuda" else False)
 
