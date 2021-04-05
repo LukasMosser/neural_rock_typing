@@ -9,6 +9,7 @@ from neural_rock.dataset import ThinSectionDataset
 from neural_rock.utils import set_seed
 from neural_rock.model import NeuralRockModel
 from neural_rock.plot import visualize_batch
+import wandb
 
 
 def parse_arguments(argv):
@@ -31,6 +32,7 @@ def parse_arguments(argv):
 
 
 def main(args):
+
     set_seed(42, cudnn=True, benchmark=True)
 
     data_transforms = {
@@ -65,11 +67,12 @@ def main(args):
         visualize_batch(train_loader)
         visualize_batch(val_loader)
 
-    wandb_logger = WandbLogger(name='lukas-mosser', project='neural-rock')
-    tensorboard_logger = TensorBoardLogger("lightning_logs", name=args.labelset)
+    wandb_logger = WandbLogger(name='lukas-mosser', project='neural-rock', entity='ccg')
+    wandb_logger.experiment.config.update(args)
+
     checkpointer = ModelCheckpoint(monitor="val/f1", verbose=True, mode="max")
     trainer = pl.Trainer(gpus=-1, max_epochs=args.epochs, benchmark=True,
-                         logger=[wandb_logger, tensorboard_logger],
+                         logger=[wandb_logger],
                          callbacks=[checkpointer],
                          check_val_every_n_epoch=10)
 

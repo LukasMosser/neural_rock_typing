@@ -72,7 +72,7 @@ def compute_images(X, grad_cam, max_classes, resize):
     return maps
 
 
-device = "cuda"
+device = "cpu"
 
 data_load_state = st.text('Loading data...')
 
@@ -86,9 +86,9 @@ with col1:
     image_paths, modified_label_map, image_names, class_names = load_data(problem)
 
     if problem == "Lucia":
-        chkpt = "lightning_logs/version_2/checkpoints/epoch=422-step=1265.ckpt"
+        chkpt = "./data/models/Lucia/v1/epoch=29-step=629.ckpt"
     elif problem == "DominantPore":
-        chkpt = "lightning_logs/version_1/checkpoints/epoch=999-step=2999.ckpt"
+        chkpt = "./data/models/DominantPore/v1/epoch=49-step=1049.ckpt"
     elif problem == "Dunham":
         chkpt = "./data/models/Dunham/v1/epoch=9-step=209.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))

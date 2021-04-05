@@ -11,15 +11,13 @@ class NeuralRockModel(pl.LightningModule):
     def __init__(self, num_classes, learning_rate=3e-4, weight_decay=1e-5, dropout=0.5):
         super().__init__()
 
-        self.model = models.vgg11(pretrained=True)
-
-        for param in self.model.features.parameters():
-            param.requires_grad = False
-
+        backbone = models.vgg11(pretrained=True)
+        self.feature_extractor = backbone.features
         self.dropout = dropout
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-        self.model.classifier = nn.Sequential(
+
+        self.classifier = nn.Sequential(nn.Flatten(),
                                 nn.Dropout(p=self.dropout),
                                 nn.Linear(25088, 1024, bias=True),
                                 nn.LeakyReLU(inplace=True),
@@ -32,13 +30,19 @@ class NeuralRockModel(pl.LightningModule):
         self.val_f1 = F1(average='micro', num_classes=num_classes)
 
     def forward(self, x):
-        return self.model(x)
+        self.feature_extractor.eval()
+
+        with torch.no_grad():
+            representations = self.feature_extractor(x)
+
+        x = self.classifier(representations)
+        return x
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         y = y.squeeze(1)
 
-        logits = self.model(x)
+        logits = self(x)
         y_prob = F.softmax(logits, dim=1)
 
         loss = F.cross_entropy(logits, y)
@@ -57,7 +61,7 @@ class NeuralRockModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1)
 
-        logits = self.model(x)
+        logits = self(x)
         y_prob = F.softmax(logits, dim=1)
 
         loss = F.cross_entropy(logits, y)
@@ -73,5 +77,5 @@ class NeuralRockModel(pl.LightningModule):
         self.log('val/f1', f1, prog_bar=True, on_epoch=True, on_step=False)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.model.classifier.parameters(),
+        return torch.optim.Adam(self.classifier.parameters(),
                                 lr=self.learning_rate, weight_decay=self.weight_decay)
