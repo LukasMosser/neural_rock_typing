@@ -139,7 +139,7 @@ with col1:
             return x
 
     model = Model(model.feature_extractor, model.classifier)
-
+    model.to(device)
     grad_cam = GradCam(model=model,
                        feature_module=model.feature_extractor,
                        target_layer_names=[str(layer)],
