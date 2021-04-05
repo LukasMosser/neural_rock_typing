@@ -88,7 +88,7 @@ with col1:
     if problem == "Lucia":
         chkpt = "./data/models/Lucia/v1/epoch=29-step=629.ckpt"
     elif problem == "DominantPore":
-        chkpt = "./data/models/DominantPore/v1/epoch=49-step=1049.ckpt"
+        chkpt = "./data/models/DominantPore/v1/epoch=79-step=1679.ckpt"
     elif problem == "Dunham":
         chkpt = "./data/models/Dunham/v1/epoch=9-step=209.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))
