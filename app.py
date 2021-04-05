@@ -78,10 +78,10 @@ def load_model(checkpoint, num_classes=5):
     return model
 
 
-def compute_images(X, grad_cam, max_classes, resize):
+def compute_images(X, grad_cam, max_classes, resize, device="cpu"):
     maps = []
     for i in range(max_classes):
-        gb = grad_cam(X, i)
+        gb = grad_cam(X.to(device), i)
         gb = (gb - np.min(gb)) / (np.max(gb) - np.min(gb))
         gb = resize(torch.from_numpy(gb).unsqueeze(0))[0]
         maps.append(gb.cpu().numpy())
