@@ -143,7 +143,7 @@ with col1:
     grad_cam = GradCam(model=model.to(device),
                        feature_module=model.feature_extractor.to(device),
                        target_layer_names=[str(layer)],
-                       use_cuda=True if device is "cuda" else False)
+                       device=device)
 
     from imageio import imread
     X = imread(image_paths[image_id]['path'])
