@@ -1,20 +1,17 @@
 import numpy as np
 import pandas as pd
 import os
-from tqdm import tqdm
-import imageio
 
 
 def load_excel(db_id):
     columns = ['Location', 'Sample']
     features = ['Mineralogy', 'Dunham_class', 'Lucia_class', 'Macro_Dominant_type', 'Macro_Minor_types']
-    df_dry = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_dry", skiprows=[1])[columns+features]
+    df_dry = pd.read_excel("./data/Data_Sheet_GDrive_new.xls", "Chaper_3_dry", skiprows=[1])[columns+features]
     df_dry['saturation'] = 'dry'
-    df_wet = pd.read_excel("./data/Data_Sheet_GDrive_updated.xls", "Chapter_3_water_saturated", skiprows=[1])[columns+features]
+    df_wet = pd.read_excel("./data/Data_Sheet_GDrive_new.xls", "Chapter_3_water saturated", skiprows=[1])[columns+features]
     df_wet['saturation'] = 'wet'
     df = pd.concat([df_dry, df_wet])
     df = df.loc[df["Location"] == db_id]
-    #df['Sample'] = df['Sample'].astype(int)
     return df
 
 

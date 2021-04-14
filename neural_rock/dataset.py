@@ -27,7 +27,6 @@ class ThinSectionDataset(Dataset):
         elif self.path.split("/")[-1] == "Malampaya":
             db_id = "M"
 
-
         df = pre.load_excel(db_id)
 
         available_images, df_ = pre.load_features(available_images, df)
