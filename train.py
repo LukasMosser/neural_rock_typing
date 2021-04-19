@@ -3,19 +3,18 @@ import argparse
 import albumentations as A
 from torch.utils.data import DataLoader, ConcatDataset
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger, TensorBoardLogger
+from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.utils import set_seed
-from neural_rock.model import NeuralRockModel, NeuralRockModelVGGLinear
+from neural_rock.model import NeuralRockModel, NeuralRockModelResnetFC, NeuralRockModeLeNetFC
 from neural_rock.plot import visualize_batch
-import wandb
 
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument("--labelset", type=str, default="Dunham", choices=["Dunham", "DominantPore", "Lucia"])
-    parser.add_argument("--model", type=str, default=['VGG_FC'], choices=['VGG_FC', 'VGG_Linear'])
+    parser.add_argument("--model", type=str, default=['VGG_FC'], choices=['VGG_FC', 'VGG_Linear', 'Resnet', 'LeNet'])
     parser.add_argument("--weight_decay", type=float, default=1e-5, help="Which batch_size to use for training")
     parser.add_argument("--learning_rate", type=float, default=3e-4, help="Which batch_size to use for training")
     parser.add_argument("--dropout", type=float, default=0.5, help="Which batch_size to use for training")
@@ -41,8 +40,7 @@ def main(args):
                 A.HorizontalFlip(p=0.5),
                 A.Rotate(360, always_apply=True),
                 A.RandomCrop(width=512, height=512),
-                A.GaussNoise(),
-                A.HueSaturationValue(sat_shift_limit=0, val_shift_limit=50, hue_shift_limit=255, always_apply=True),
+                A.HueSaturationValue(sat_shift_limit=0, val_shift_limit=0, hue_shift_limit=255, always_apply=True),
                 A.Resize(width=224, height=224),
                 A.Normalize()
     ]),
@@ -75,12 +73,13 @@ def main(args):
     trainer = pl.Trainer(gpus=-1, max_epochs=args.epochs, benchmark=True,
                          logger=[wandb_logger],
                          callbacks=[checkpointer],
-                         check_val_every_n_epoch=10)
-
-    if args.model == 'VGG_FC':
+                         check_val_every_n_epoch=1)
+    if args.model == 'Resnet':
+        model = NeuralRockModelResnetFC(len(train_dataset_base.class_names))
+    elif args.model == 'LeNet':
+        model = NeuralRockModeLeNetFC(len(train_dataset_base.class_names))
+    else:
         model = NeuralRockModel(len(train_dataset_base.class_names))
-    elif args.model == 'VGG_Linear':
-        model = NeuralRockModelVGGLinear(len(train_dataset_base.class_names))
 
     trainer.fit(model, train_dataloader=train_loader, val_dataloaders=val_loader)
 

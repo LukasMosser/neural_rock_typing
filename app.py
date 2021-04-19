@@ -105,9 +105,9 @@ with col1:
     if problem == "Lucia":
         chkpt = "./data/models/Lucia/v1/epoch=29-step=629.ckpt"
     elif problem == "DominantPore":
-        chkpt = "./data/models/DominantPore/v1/epoch=79-step=1679.ckpt"
+        chkpt = "./data/models/DominantPore/v1/epoch=0-step=20.ckpt"
     elif problem == "Dunham":
-        chkpt = "./data/models/Dunham/v1/epoch=9-step=209.ckpt"
+        chkpt = "./data/models/Dunham/v1/epoch=11-step=251.ckpt"
     model = load_model(chkpt, num_classes=len(class_names))
 
     image_name_map = {}
@@ -129,12 +129,10 @@ with col1:
         def __init__(self, feature_extractor, fc):
             super(Model, self).__init__()
             self.feature_extractor = feature_extractor
-            self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
             self.fc = fc
 
         def forward(self, x):
             x = self.feature_extractor(x)
-            x = self.avgpool(x)
             x = self.fc(x)
             return x
 
@@ -153,10 +151,12 @@ with col1:
 
     label = image_paths[image_id]['label']
 
-    transform = A.Compose([A.Normalize(),
-                           A.Resize(X.shape[0] // 2, X.shape[1] // 2)])
+    transform = A.Compose([
+        A.CenterCrop(1024, 1024),
+        A.Resize(224*2, 224*2),
+        A.Normalize()])
 
-    resize = transforms.Resize((X.shape[0]//2,  X.shape[1]//2))
+    resize = transforms.Resize((224*2, 224*2))
 
     X = transform(image=X)['image'].transpose(2, 0, 1)
 
@@ -211,6 +211,8 @@ with col2:
 
 with col1:
     st.altair_chart(c, use_container_width=True)
+
+
 
 
 
