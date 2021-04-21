@@ -53,9 +53,12 @@ def main(args):
 
     train_dataset_base = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset,
                                        transform=data_transforms['train'], train=True, seed=args.seed)
+
+    print(train_dataset_base.image_ids)
+
     val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset,
                                      transform=data_transforms['val'], train=False, seed=args.seed)
-
+    print(val_dataset.image_ids)
     train_dataset = ConcatDataset([train_dataset_base]*10)
     val_dataset = ConcatDataset([val_dataset]*args.num_val)
 

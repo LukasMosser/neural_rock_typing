@@ -15,6 +15,11 @@ import imageio
 import os
 import argparse
 import streamlit as st
+import json
+
+
+with open("./data/train_test_split.json") as f:
+  train_test_split = json.load(f)
 
 parser = argparse.ArgumentParser(description='This app lists animals')
 
@@ -101,6 +106,12 @@ with col1:
     problem = st.selectbox("Choose Classifier", ['Dunham', 'DominantPore', 'Lucia'])
 
     image_paths, modified_label_map, image_names, class_names = load_data(problem)
+
+    for id, img in image_paths.items():
+        if id in train_test_split['train']:
+            img['train'] = 'Train'
+        else:
+            img['train'] = 'Test'
 
     if problem == "Lucia":
         chkpt = "./data/models/Lucia/v1/epoch=29-step=629.ckpt"
