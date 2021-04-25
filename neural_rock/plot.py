@@ -16,13 +16,12 @@ def imshow(inp, title=None):
 
 
 def visualize_batch(loader):
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
+    from neural_rock.utils import MEAN_TRAIN, STD_TRAIN
 
     fig, axarr = plt.subplots(4, 4, figsize=(12, 12))
     for dat, _ in loader:
         break
     for ax, im in zip(axarr.flatten(), dat.numpy()):
-        im = im.transpose(1, 2, 0)*std+mean
+        im = im.transpose(1, 2, 0)*STD_TRAIN+MEAN_TRAIN
         ax.imshow(im)
     plt.show()

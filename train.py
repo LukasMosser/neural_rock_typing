@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from neural_rock.dataset import GPUThinSectionDataset
+from neural_rock.dataset import GPUThinSectionDataset, ThinSectionDataset
 from neural_rock.utils import MEAN_TRAIN, STD_TRAIN
 from neural_rock.model import NeuralRockModel, make_vgg11_model, make_lenet_model, make_resnet18_model
 from neural_rock.plot import visualize_batch
@@ -44,7 +44,7 @@ def main(args):
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(degrees=360),
             transforms.RandomCrop((512, 512)),
-            transforms.ColorJitter(hue=255),
+            transforms.ColorJitter(hue=0.5),
             transforms.Resize((224, 224)),
             transforms.Normalize(mean=MEAN_TRAIN, std=STD_TRAIN)
         ]),
@@ -56,10 +56,10 @@ def main(args):
             ])
     }
 
-    train_dataset_base = GPUThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
+    train_dataset_base = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
                                        transform=data_transforms['train'], train=True, seed=args.seed)
 
-    val_dataset = GPUThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
+    val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
                                        transform=data_transforms['train'], train=False, seed=args.seed)
 
     train_loader = DataLoader(train_dataset_base, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory)

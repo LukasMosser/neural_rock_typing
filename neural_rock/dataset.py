@@ -4,7 +4,7 @@ from imageio import imread
 import numpy as np
 from neural_rock import preprocess as pre
 from sklearn.model_selection import StratifiedShuffleSplit
-
+from skimage.util import img_as_float
 
 class ThinSectionDataset(Dataset):
     def __init__(self, path, label_set, transform=None, seed=42, test_split_size=0.5, train=True, preload_images=True):
@@ -88,13 +88,13 @@ class ThinSectionDataset(Dataset):
     def __getitem__(self, idx):
         dset = self.dataset[self.image_ids[idx]]
 
-        X = self.images[self.image_ids[idx]]
+        X = torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1).float()
 
         y = torch.from_numpy(np.array([dset['feature']]))
 
         if self.transform:
-            X = torch.from_numpy(self.transform(image=X)['image'].transpose(2, 0, 1))
-        return X, y
+            X = self.transform(X)
+        return X.float(), y
 
 
 class GPUThinSectionDataset(Dataset):
@@ -173,7 +173,7 @@ class GPUThinSectionDataset(Dataset):
         return dataset, images, class_names, modified_label_map, weights
 
     def make_dataset(self):
-        imgs = [torch.from_numpy(self.images[self.image_ids[idx]]).permute(2, 0, 1).cuda().char() for idx in range(len(self.images))]
+        imgs = [torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1).cuda() for idx in range(len(self.images))]
         labels = [torch.tensor(self.dataset[self.image_ids[idx]]['feature'], device='cuda') for idx in range(len(self.images))]
         return imgs, labels
 
