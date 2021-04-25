@@ -178,7 +178,7 @@ class GPUThinSectionDataset(Dataset):
         return imgs, labels
 
     def __len__(self):
-        return len(self.image_ids)
+        return len(self.images)
 
     def __getitem__(self, idx):
         X = self.images[idx]
@@ -188,4 +188,4 @@ class GPUThinSectionDataset(Dataset):
         if self.transform:
             X = self.transform(X)
 
-        return X, y
+        return X.float(), y.float()
