@@ -40,7 +40,7 @@ class NeuralRockModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y = y.squeeze(1)
+        #y = y.squeeze(1)
 
         logits = self(x)
         y_prob = F.softmax(logits, dim=1)
@@ -59,7 +59,7 @@ class NeuralRockModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y = y.squeeze(1)
+        #y = y.squeeze(1)
 
         logits = self(x)
         y_prob = F.softmax(logits, dim=1)
