@@ -88,7 +88,7 @@ class ThinSectionDataset(Dataset):
     def __getitem__(self, idx):
         dset = self.dataset[self.image_ids[idx]]
 
-        X = torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1).float()
+        X = torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1)
 
         y = torch.from_numpy(np.array([dset['feature']]))
 
@@ -181,7 +181,7 @@ class GPUThinSectionDataset(Dataset):
         return len(self.images)
 
     def __getitem__(self, idx):
-        X = self.images[idx]
+        X = self.images[idx].float()
 
         y = self.labels[idx]
 
