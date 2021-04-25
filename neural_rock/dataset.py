@@ -188,4 +188,4 @@ class GPUThinSectionDataset(Dataset):
         if self.transform:
             X = self.transform(X)
 
-        return X.float(), y.float()
+        return X.float(), y
