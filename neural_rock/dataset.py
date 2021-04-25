@@ -173,7 +173,7 @@ class GPUThinSectionDataset(Dataset):
         return dataset, images, class_names, modified_label_map, weights
 
     def make_dataset(self):
-        imgs = [torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1).cuda() for idx in range(len(self.images))]
+        imgs = [torch.from_numpy(img_as_float(self.images[self.image_ids[idx]])).permute(2, 0, 1).cuda().half() for idx in range(len(self.images))]
         labels = [torch.tensor(self.dataset[self.image_ids[idx]]['feature'], device='cuda') for idx in range(len(self.images))]
         return imgs, labels
 
