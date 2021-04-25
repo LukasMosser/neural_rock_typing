@@ -16,7 +16,10 @@ import os
 import argparse
 import streamlit as st
 import json
-
+import xarray as xa
+import holoviews as hv
+from holoviews.operation.datashader import rasterize
+hv.extension('bokeh')
 
 with open("./data/train_test_split.json") as f:
   train_test_split = json.load(f)
@@ -39,7 +42,6 @@ st.title('Thin Section Neural Visualizer')
 
 MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
 STD_TRAIN = np.array([0.229, 0.224, 0.225])
-
 
 def load_img(path):
     image = imageio.imread(path).astype(np.float32)
@@ -179,6 +181,62 @@ with col1:
     image_patch = np.transpose(X.data.cpu().numpy()[0], (1, 2, 0)) * STD_TRAIN + MEAN_TRAIN
     X = X.to(device)
     maps = compute_images(X, grad_cam, len(class_names), resize=resize, device=device)
+
+img_np = imageio.imread("./data/Leg194/1x/Leg194_2-1x.jpg")
+print(img_np.shape)
+coords = {'x': np.arange(img_np.shape[0]), 'y': np.arange(img_np.shape[1])}
+print(len(coords['x']), len(coords['y']))
+#image_patch = image_patch.reshape(image_patch.shape[0], image_patch.shape[1], 1, 1, 1)
+#xr_ds = xa.DataArray(name='rgb', data=image_patch, coords=coords, dims=["x", "y"])
+
+r_ = xa.DataArray(name='r', data=img_np[..., 0], coords=coords, dims=['x', 'y'])
+g_ = xa.DataArray(name='g', data=img_np[..., 1], coords=coords, dims=['x', 'y'])
+b_ = xa.DataArray(name='b', data=img_np[..., 2], coords=coords, dims=['x', 'y'])
+
+# Convert to stack of images with x/y-coordinates along axes
+#image_stack = ds.to(hv.RGB, kdims=['x', 'y'], vdims=['r', 'g', 'b'])
+from datashader.utils import ngjit
+import datashader as ds
+nodata= 1
+
+@ngjit
+def normalize_data(agg):
+    out = np.zeros_like(agg)
+    min_val = 0
+    max_val = 2**16 - 1
+    range_val = max_val - min_val
+    col, rows = agg.shape
+    c = 40
+    th = .125
+    for x in range(col):
+        for y in range(rows):
+            val = agg[x, y]
+            norm = (val - min_val) / range_val
+            norm = 1 / (1 + np.exp(c * (th - norm))) # bonus
+            out[x, y] = norm * 255.0
+    return out
+
+def combine_bands(r, g, b):
+    xs, ys = r['y'], r['x']
+    r, g, b = [ds.utils.orient_array(im) for im in (r, g, b)]
+    print(xs.shape, ys.shape, r.shape, g.shape, b.shape)
+    #a = (np.where(np.logical_or(np.isnan(r),r<=nodata),0,255)).astype(np.uint8)
+    r = r#(normalize_data(r)).astype(np.uint8)
+    g = g#(normalize_data(g)).astype(np.uint8)
+    b = b#(normalize_data(b)).astype(np.uint8)
+    print(xs.shape, ys.shape, r.shape, g.shape, b.shape)
+    return hv.RGB((xs, ys[::-1], r, g, b), vdims=list('RGB'))
+
+rgb = combine_bands(r_, g_, b_)
+# Apply regridding if each image is large
+regridded = rasterize(rgb)
+
+# Set a global Intensity range
+#regridded = regridded.redim.range(Intensity=(0, 100))
+regridded = regridded.opts(responsive=False, width=800, height=800, active_tools=['xwheel_zoom', 'pan']) #, width=800, height=800,
+
+with col1:
+    st.bokeh_chart(hv.render(regridded, backend='bokeh'))
 
 with col1:
 

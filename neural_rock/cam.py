@@ -64,8 +64,17 @@ class GradCam:
         self.model.eval()
         self.model = model.to(device)
         self.device = device
-
+        self.target_layer_names = target_layer_names
         self.extractor = ModelOutputs(self.model, self.feature_module, target_layer_names)
+
+    @property
+    def target_layer_names(self):
+        return self.__target_layer_names
+
+    @target_layer_names.setter
+    def target_layer_names(self, x):
+        self.__target_layer_names = x
+        self.extractor = ModelOutputs(self.model, self.feature_module, self.__target_layer_names)
 
     def forward(self, input_img):
         return self.model(input_img)

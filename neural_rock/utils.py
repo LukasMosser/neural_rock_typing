@@ -75,3 +75,7 @@ def load_checkpoint(path, model, optimizer=None):
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+
+
+MEAN_TRAIN = [0.485, 0.456, 0.406]
+STD_TRAIN = [0.229, 0.224, 0.225]

@@ -1,5 +1,6 @@
 name: neural_rock
 channels:
+  - pyviz
   - pytorch
   - conda-forge
   - defaults
@@ -16,6 +17,10 @@ dependencies:
   - nb_conda_kernels
   - h5py
   - scikit-learn
+  - bokeh
+  - panel
+  - holoviews
+  - datashader
   - pip:
     - tqdm
     - notebook

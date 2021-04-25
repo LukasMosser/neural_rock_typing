@@ -1,42 +1,38 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torchvision import models
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import F1
-
 from neural_rock.networks.lenet import LeNetFeatureExtractor, LeNet
 
+
 class NeuralRockModel(pl.LightningModule):
-    def __init__(self, num_classes, learning_rate=3e-4, weight_decay=1e-5, dropout=0.5, average='micro'):
+    def __init__(self, feature_extractor, classifier, num_classes, freeze_feature_extractor=True,
+                 learning_rate=3e-4, weight_decay=1e-5, dropout=0.5, average='micro'):
         super().__init__()
         self.save_hyperparameters()
 
-        backbone = models.vgg11(pretrained=True)
+        self.feature_extractor = feature_extractor
+        self.classifier = classifier
 
-        self.feature_extractor = backbone.features
-        for param in self.feature_extractor.parameters():
-            param.requires_grad = False
-        self.dropout = dropout
-        self.learning_rate = learning_rate
-        self.weight_decay = weight_decay
-
-        self.classifier = nn.Sequential(nn.AdaptiveAvgPool2d(7),
-                                        nn.Flatten(),
-                                        nn.Dropout(p=self.dropout),
-                                        nn.Linear(25088, 256),
-                                        nn.LeakyReLU(inplace=True),
-                                        nn.Dropout(p=self.dropout),
-                                        nn.Linear(256, num_classes))
+        if freeze_feature_extractor:
+            self.freeze_feature_extractor()
 
         self.train_f1 = F1(average=average, num_classes=num_classes)
         self.val_f1 = F1(average=average, num_classes=num_classes)
 
-    def forward(self, x):
-        self.feature_extractor.eval()
+    def freeze_feature_extractor(self):
+        for param in self.feature_extractor.parameters():
+            param.requires_grad = False
 
-        with torch.no_grad():
+    def forward(self, x):
+        if self.hparams['freeze_feature_extractor']:
+            self.feature_extractor.eval()
+
+            with torch.no_grad():
+                representations = self.feature_extractor(x)
+        else:
             representations = self.feature_extractor(x)
 
         x = self.classifier(representations)
@@ -59,7 +55,7 @@ class NeuralRockModel(pl.LightningModule):
         f1 = self.train_f1.compute()
 
         # Save the metric
-        self.log('train/f1', f1, prog_bar=True, on_epoch=True, on_step=False)
+        self.log('train/f1', f1, prog_bar=True, on_epoch=True)
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
@@ -71,7 +67,8 @@ class NeuralRockModel(pl.LightningModule):
         loss = F.cross_entropy(logits, y)
 
         self.val_f1(y_prob, y)
-        self.log('val/loss', loss, on_epoch=True, on_step=False)
+        self.log('val/loss', loss, on_epoch=True)
+
         return {'loss': loss, 'y': y, 'y_prob': y_prob}
 
     def validation_epoch_end(self, outputs):
@@ -81,63 +78,45 @@ class NeuralRockModel(pl.LightningModule):
         self.log('val/f1', f1, prog_bar=True, on_epoch=True, on_step=False)
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.classifier.parameters(),
-                                lr=self.learning_rate, weight_decay=self.weight_decay)
+        return torch.optim.Adam(self.classifier.parameters() if self.hparams['freeze_feature_extractor'] else self.parameters(),
+                                lr=self.hparams['learning_rate'], weight_decay=self.hparams['weight_decay'])
 
 
-class NeuralRockModelVGGLinear(NeuralRockModel):
-    def __init__(self, *args, **kwargs):
-        super(NeuralRockModelVGGLinear, self).__init__(*args, **kwargs)
-        self.classifier = nn.Sequential(nn.Flatten(),
-                                nn.Dropout(p=self.dropout),
-                                nn.Linear(25088, args[0], bias=True))
+def make_vgg11_model(num_classes, dropout=0.5):
+    backbone = models.vgg11(pretrained=True)
+    feature_extractor = backbone.features
+    classifier =  nn.Sequential(nn.AdaptiveAvgPool2d(7),
+                              nn.Flatten(),
+                              nn.Dropout(p=dropout),
+                              nn.Linear(25088, 256),
+                              nn.LeakyReLU(inplace=True),
+                              nn.Dropout(p=dropout),
+                              nn.Linear(256, num_classes))
+    return feature_extractor, classifier
 
 
-class NeuralRockModelResnetFC(NeuralRockModel):
-    def __init__(self, *args, **kwargs):
-        super(NeuralRockModelResnetFC, self).__init__(*args, **kwargs)
-        backbone = models.resnet18(pretrained=True)
-        modules = list(backbone.children())[:-1]
-        self.feature_extractor = nn.Sequential(*modules)
-        for p in self.feature_extractor.parameters():
-            p.requires_grad = False
-
-        self.classifier = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(512, args[0]))
-
-    def forward(self, x):
-        representations = self.feature_extractor(x)
-        x = self.classifier(representations)
-        return x
-
-    def configure_optimizers(self):
-        return torch.optim.Adam([
-                {'params': self.classifier.parameters(), 'lr': 3e-4},
-                {'params': self.feature_extractor.parameters(), 'lr': 1e-5}
-            ], lr=self.learning_rate, weight_decay=self.weight_decay)
+def make_resnet18_model():
+    backbone = models.resnet18(pretrained=True)
+    modules = list(backbone.children())[:-1]
+    feature_extractor = nn.Sequential(*modules)
+    classifier = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(512, args[0]))
+    return feature_extractor, classifier
 
 
-class NeuralRockModeLeNetFC(NeuralRockModel):
-    def __init__(self, *args, **kwargs):
-        super(NeuralRockModeLeNetFC, self).__init__(*args, **kwargs)
-        backbone = LeNet(N=32, num_classes=args[0], channels_in=3)
-        self.feature_extractor = backbone.feature_extractor
-        self.classifier = backbone.classifier
+def make_lenet_model(num_classes):
+    backbone = LeNet(N=32, num_classes=num_classes, channels_in=3)
 
-        def weights_init(m):
-            if isinstance(m, nn.Conv2d):
-                torch.nn.init.kaiming_normal_(m.weight.data)
-                torch.nn.init.zeros_(m.bias.data)
-            elif isinstance(m, nn.Linear):
-                torch.nn.init.kaiming_normal_(m.weight.data)
-                torch.nn.init.zeros_(m.bias.data)
+    def weights_init(m):
+        if isinstance(m, nn.Conv2d):
+            torch.nn.init.kaiming_normal_(m.weight.data)
+            torch.nn.init.zeros_(m.bias.data)
+        elif isinstance(m, nn.Linear):
+            torch.nn.init.kaiming_normal_(m.weight.data)
+            torch.nn.init.zeros_(m.bias.data)
 
-        self.apply(weights_init)
+    backbone.apply(weights_init)
 
-    def forward(self, x):
-        representations = self.feature_extractor(x)
-        x = self.classifier(representations)
-        return x
+    feature_extractor = backbone.feature_extractor
+    classifier = backbone.classifier
 
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(),
-                                lr=self.learning_rate, weight_decay=self.weight_decay)
+    return feature_extractor
