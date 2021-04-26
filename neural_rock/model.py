@@ -95,11 +95,11 @@ def make_vgg11_model(num_classes, dropout=0.5):
     return feature_extractor, classifier
 
 
-def make_resnet18_model():
+def make_resnet18_model(num_classes, **kwargs):
     backbone = models.resnet18(pretrained=True)
     modules = list(backbone.children())[:-1]
     feature_extractor = nn.Sequential(*modules)
-    classifier = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(512, args[0]))
+    classifier = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(512, num_classes))
     return feature_extractor, classifier
 
 
