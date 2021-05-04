@@ -10,9 +10,6 @@ MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
 STD_TRAIN = np.array([0.229, 0.224, 0.225])
 
 
-
-
-
 class Model(nn.Module):
     def __init__(self, feature_extractor, fc):
         super(Model, self).__init__()
@@ -24,10 +21,12 @@ class Model(nn.Module):
         x = self.fc(x)
         return x
 
-def get_train_test_split():
-    with open("./data/train_test_split.json") as f:
+
+def get_train_test_split(path="./data/train_test_split.json"):
+    with open(path) as f:
         train_test_split = json.load(f)
     return train_test_split
+
 
 def load_data(labelset):
     transform = A.Compose([A.Normalize()])
@@ -56,7 +55,7 @@ def load_data(labelset):
 
 def load_model(checkpoint, num_classes=5, model_init_func=make_vgg11_model):
     feature_extractor, classifier = model_init_func(num_classes=num_classes)
-    model = NeuralRockModel(feature_extractor, classifier, num_classes=num_classes)#.load_from_checkpoint(checkpoint, num_classes=num_classes)
+    model = NeuralRockModel(feature_extractor, classifier, num_classes=num_classes).load_from_checkpoint(checkpoint)
     model.eval()
     model.freeze()
     return model
@@ -69,6 +68,5 @@ def compute_images(X, grad_cam, max_classes, resize, device="cpu"):
         gb = (gb - np.min(gb)) / (np.max(gb) - np.min(gb))
         gb = resize(torch.from_numpy(gb).unsqueeze(0))[0]
         maps.append(gb.cpu().numpy())
-        break
     maps = np.stack(maps, axis=0)
     return maps

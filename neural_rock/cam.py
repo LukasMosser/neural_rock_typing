@@ -1,9 +1,12 @@
-import torch
-import argparse
-import numpy as np
-import torch
 from torch.autograd import Function
-from torchvision import models, transforms
+import numpy as np
+from torchvision import transforms
+import torch
+from torch.autograd import Variable
+import albumentations as A
+from neural_rock.app.utils import compute_images
+import holoviews as hv
+hv.extension('bokeh')
 
 
 class FeatureExtractor(object):
@@ -38,6 +41,7 @@ class ModelOutputs():
     def __init__(self, model, feature_module, target_layers):
         self.model = model
         self.feature_module = feature_module
+        print(feature_module, target_layers)
         self.feature_extractor = FeatureExtractor(self.feature_module, target_layers)
 
     def get_gradients(self):
@@ -55,6 +59,22 @@ class ModelOutputs():
                 x = module(x)
 
         return target_activations, x
+
+
+def make_maps(X_np, grad_cam, num_classes, device='cpu', ratio=224.0 / 512):
+
+    transform = A.Compose([
+        A.Resize(int(ratio * X_np.shape[0]), int(ratio * X_np.shape[1])),
+        A.Normalize()])
+
+    resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
+
+    X = transform(image=X_np)['image'].transpose(2, 0, 1)
+    X = Variable(torch.from_numpy(X).unsqueeze(0), requires_grad=True).to(device)
+    X = X.to(device)
+
+    maps = compute_images(X, grad_cam, num_classes, resize=resize, device=device)
+    return maps
 
 
 class GradCam:

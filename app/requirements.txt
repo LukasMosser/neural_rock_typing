@@ -1,14 +1,10 @@
+numpy
 scipy
-tensorboard
-matplotlib
+panel
 h5py
 scikit-learn
 tqdm
-notebook
-streamlit
 captum
-wandb
 imageio
 albumentations
-xlrd
 pytorch_lightning
