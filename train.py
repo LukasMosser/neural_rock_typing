@@ -9,7 +9,7 @@ from neural_rock.utils import MEAN_TRAIN, STD_TRAIN
 from neural_rock.model import NeuralRockModel, make_vgg11_model, make_lenet_model, make_resnet18_model
 from neural_rock.plot import visualize_batch
 from torchvision import transforms
-
+from pathlib import Path
 
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
@@ -56,11 +56,14 @@ def main(args):
             ])
     }
 
-    train_dataset_base = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
-                                       transform=data_transforms['train'], train=True, seed=args.seed)
+    base_path = Path(".")
 
-    val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", args.labelset, preload_images=True,
-                                       transform=data_transforms['train'], train=False, seed=args.seed)
+    train_dataset_base = ThinSectionDataset(base_path, args.labelset,
+                                            preload_images=True,
+                                            transform=data_transforms['train'], train=True, seed=args.seed)
+
+    val_dataset = ThinSectionDataset(base_path, args.labelset, preload_images=True,
+                                       transform=data_transforms['val'], train=False, seed=args.seed)
 
     train_loader = DataLoader(train_dataset_base, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory)

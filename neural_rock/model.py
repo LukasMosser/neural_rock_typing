@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torchvision import models
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import F1
-from neural_rock.networks.lenet import LeNetFeatureExtractor, LeNet
+from neural_rock.networks.lenet import LeNet
 
 
 class NeuralRockModel(pl.LightningModule):
@@ -40,7 +40,6 @@ class NeuralRockModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        #y = y.squeeze(1)
 
         logits = self(x)
         y_prob = F.softmax(logits, dim=1)
@@ -59,7 +58,6 @@ class NeuralRockModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        #y = y.squeeze(1)
 
         logits = self(x)
         y_prob = F.softmax(logits, dim=1)
