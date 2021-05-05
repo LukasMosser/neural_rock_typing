@@ -64,6 +64,7 @@ class ThinSectionViewer(param.Parameterized):
         self.param['Class_Name'].default = class_names[0]
         self.param['Class_Name'].objects = class_names
 
+    @param.depends('label_set_name', 'model_selector', 'frozen_selector', watch=True)
     def _get_available_image_ids(self):
         with requests.Session() as s:
             result = s.get(self.server_address + 'dataset/sample_ids')
@@ -79,8 +80,8 @@ class ThinSectionViewer(param.Parameterized):
                 samples_text_map["{0:}-Test".format(sample_id)] = sample_id
 
         self.samples_text_map = samples_text_map
-        self.param['Image_Name'].default = self.samples_text_map
-        self.param['Image_Name'].objects = self.samples_text_map
+        self.param['Image_Name'].default = list(self.samples_text_map.keys())[0]
+        self.param['Image_Name'].objects = list(self.samples_text_map.keys())
 
     @param.depends('label_set_name', 'model_selector', 'frozen_selector', watch=True)
     def _get_train_test_config(self):
@@ -130,17 +131,19 @@ class ThinSectionViewer(param.Parameterized):
         sample_id = self.samples_text_map[self.Image_Name]
         with requests.Session() as s:
             result = s.get(self.server_address + 'cam/{0:}/{1:}/{2:}/{3:}/{4:}/{5:}'.format(self.label_set_name,
-                                                                                  self.model_selector.lower(),
-                                                                                  self.Network_Layer_Number,
-                                                                                  self.frozen_selector,
-                                                                                  sample_id,
-                                                                                  self.Class_Name))
+                                                                                              self.model_selector,
+                                                                                              self.Network_Layer_Number,
+                                                                                              self.frozen_selector,
+                                                                                              sample_id,
+                                                                                              self.Class_Name))
             r = loads(result.text)
             map = np.array(r)
         return map
 
     @param.depends('label_set_name', 'model_selector', 'frozen_selector', 'Network_Layer_Number', 'Class_Name', 'Image_Name')
     def load_symbol(self):
+        import time
+        time.sleep(0.5)
         X_np = self.load_image(image_name=self.Image_Name)
         resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
         map = self.make_map()
