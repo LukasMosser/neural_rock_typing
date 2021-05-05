@@ -38,7 +38,7 @@ def init_model_zoo(base_path: Path):
                 models.append(Model(label_set=label_set,
                                     model_name=model,
                                     frozen=frozen,
-                                    path=checkpoint_path,
+                                    path=str(checkpoint_path),
                                     train_test_split=train_test_split))
     return ModelZoo(models=models)
 

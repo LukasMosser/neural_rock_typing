@@ -5,6 +5,7 @@ from neural_rock.model import NeuralRockModel, make_vgg11_model
 import albumentations as A
 import torch.nn as nn
 from torchvision import transforms
+from pathlib import Path
 from torch.autograd import Variable
 
 MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
@@ -26,16 +27,16 @@ class Model(nn.Module):
 def load_data(labelset):
     transform = A.Compose([A.Normalize()])
 
-    train_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", labelset,
+    train_dataset = ThinSectionDataset(Path("."), labelset,
                                        transform=transform, train=True, seed=42, preload_images=False)
-    val_dataset = ThinSectionDataset("./data/Images_PhD_Miami/Leg194", labelset,
+    val_dataset = ThinSectionDataset(Path("."), labelset,
                                      transform=transform, train=False, seed=42, preload_images=False)
 
-    assert not any([train_id in val_dataset.image_ids for train_id in train_dataset.image_ids])
+    #assert not any([train_id in val_dataset.image_ids for train_id in train_dataset.image_ids])
 
-    modified_label_map = train_dataset.modified_label_map
-    image_names = train_dataset.image_ids
-    class_names = train_dataset.class_names
+    #modified_label_map = train_dataset.modified_label_map
+    #image_names = train_dataset.image_ids
+    #class_names = train_dataset.class_names
 
     paths = {}
     for train, dataset in zip([True, False], [train_dataset.dataset, val_dataset.dataset]):
@@ -45,7 +46,7 @@ def load_data(labelset):
                           'mask_path': dset['mask_path'],
                           'train': "Train" if train else "Test"}
 
-    return paths, modified_label_map, image_names, class_names
+    return paths
 
 
 def load_model(checkpoint, num_classes=5, model_init_func=make_vgg11_model):

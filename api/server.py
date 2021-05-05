@@ -1,19 +1,20 @@
 from fastapi import FastAPI
-import uvicorn
-from neural_rock.data_models import make_image_dataset, ModelName, LabelSetName, LabelSets, CAMRequest
-from neural_rock.preprocess import load_label_dataframe
+from mangum import Mangum
 from pathlib import Path
+from typing import List, Dict
+import torch.nn as nn
+import numpy as np
+from neural_rock.app.utils import make_cam_map
 from neural_rock.model import NeuralRockModel
 from neural_rock.cam import GradCam
 from neural_rock.server.utils import make_label_sets, init_model_zoo, model_lookup, load_image
-from typing import List, Dict
-import torch.nn as nn
-from neural_rock.app.utils import make_cam_map
+from neural_rock.data_models import make_image_dataset, ModelName, LabelSetName, LabelSets, CAMRequest
+from neural_rock.preprocess import load_label_dataframe
 
-app = FastAPI()
+app = FastAPI(title='Neural Rock API')
 
 device = 'cpu'
-valid_layers = {'resnet': list(range(9)), 'vgg': list(range(21))}
+valid_layers = {'resnet': list(range(8)), 'vgg': list(range(21))}
 base_path = Path("..")
 
 df = load_label_dataframe(base_path=base_path)
@@ -25,11 +26,6 @@ model_zoo = init_model_zoo(base_path=base_path)
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
-
-
-@app.post("/cam/{label_set_name}")
-async def get_cam(label_set_name: LabelSetName):
-    return {"message": label_set_name}
 
 
 @app.get("/models")
@@ -60,6 +56,10 @@ async def get_roi_path(sample_id: int) -> Path:
 @app.get("/dataset/sample_ids")
 async def get_sample_ids() -> List[int]:
     return list(image_dataset.image_paths.keys())
+
+@app.get("/models/{model_name}/valid_layer_range")
+async def get_valid_layer_range(model_name: ModelName) -> List[int]:
+    return valid_layers[model_name]
 
 
 @app.get("/get_train_test_images/{label_set}/{model_name}/{frozen}")
@@ -105,9 +105,11 @@ async def compute_cam(label_set: LabelSetName,
                        cam,
                        label_sets.sets[label_set].label_to_class(class_name),
                        device=device)
-    cam_request = CAMRequest(cam_map=map.tolist())
-    return cam_request
+    print(map.shape)
+    cam_request = CAMRequest(cam_map=np.nan_to_num(map).tolist())
+    return cam_request.cam_map
 
+handler = Mangum(app=app)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+#if __name__ == "__main__":
+#    uvicorn.run(app, host="0.0.0.0", port=8000)

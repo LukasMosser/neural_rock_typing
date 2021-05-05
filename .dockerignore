@@ -1,0 +1,9 @@
+data/
+neural-rock/
+notebooks/
+backup/
+neural_rock.egg-info
+results/
+tests/
+wandb/
+

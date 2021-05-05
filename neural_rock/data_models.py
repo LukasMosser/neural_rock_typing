@@ -101,7 +101,7 @@ class Model(pydantic.BaseModel):
     label_set: LabelSetName
     model_name: ModelName
     frozen: bool
-    path: pydantic.FilePath
+    path: str
     train_test_split: Dict[str, List[int]]
 
     def get_model(self, num_classes) -> Tuple[nn.Module]:
