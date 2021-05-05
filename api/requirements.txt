@@ -1,0 +1,8 @@
+--find-links https://download.pytorch.org/whl/torch_stable.html
+fastapi
+uvicorn
+torch==1.8.1+cpu
+torchvision
+numpy
+mangum
+imageio

@@ -42,12 +42,12 @@ jobs:
 
       - name: Activate and Install Depencies into Virtual env
         run: python -m venv venv && source venv/bin/activate &&
-          pip3 install -r requirements.txt
+          pip3 install -r api/requirements.txt
         if: steps.cache-venv.outputs.cache-hit != 'true'
 
       # Install all the app dependencies
       - name: Install dependencies
-        run: pip3 install -r requirements.txt
+        run: pip3 install -r api/requirements.txt
 
       # Build the app and run tests
       - name: Build and Run Test
@@ -59,7 +59,7 @@ jobs:
           zip -r9 ../../../../api.zip .
 
       - name: Add App to Zipfile
-        run: cd ./app && zip -g ../api.zip -r .
+        run: cd ./api && zip -g ../api.zip -r .
 
       - name: Upload zip file artifact
         uses: actions/upload-artifact@v2

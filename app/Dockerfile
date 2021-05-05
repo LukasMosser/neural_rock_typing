@@ -15,7 +15,7 @@ COPY ./data/Images_PhD_Miami/ROI ./data/Images_PhD_Miami/ROI
 # Install Python dependencies
 RUN set -ex && pip3 install -r app/requirements.txt
 
-# Run the web server
+# Run the web api
 EXPOSE 8000
 ENV PYTHONPATH /repo
 CMD python3 -m panel serve /repo/app/my_app.py
