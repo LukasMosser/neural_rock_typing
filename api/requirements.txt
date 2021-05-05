@@ -6,3 +6,4 @@ torchvision
 numpy
 mangum
 imageio
+pytest
