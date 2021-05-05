@@ -1,12 +1,15 @@
+from enum import Enum
+
 import pandas as pd
 import pydantic
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from pathlib import Path
-
 import torch
-
-from neural_rock.preprocess import get_image_paths
 import numpy
+from torch import nn as nn
+
+from neural_rock.model import make_resnet18_model, make_vgg11_model
+from neural_rock.preprocess import get_image_paths
 
 
 class ImageDataset(pydantic.BaseModel):
@@ -66,10 +69,51 @@ class LabelSet(pydantic.BaseModel):
                         class_names=self.class_names,
                         sample_labels=self.sample_labels[samples])
 
+    @property
+    def num_classes(self):
+        return len(self.class_names)
 
-def make_image_dataset(df: pd.DataFrame, base_path: Path=Path("..")):
+
+def make_image_dataset(df: pd.DataFrame, base_path: Path=Path("..")) -> ImageDataset:
     sample_ids, image_paths, roi_paths = get_image_paths(base_path=base_path)
     image_paths = {idx: path for idx, path in image_paths.items() if idx in df['Sample'].values}
     roi_paths = {idx: path for idx, path in roi_paths.items() if idx in df['Sample'].values}
     image_dataset = ImageDataset(image_paths=image_paths, roi_paths=roi_paths)
     return image_dataset
+
+
+class ModelName(str, Enum):
+    resnet = "resnet"
+    vgg = "vgg"
+
+
+class LabelSetName(str, Enum):
+    dunham = "Dunham"
+    lucia = "Lucia"
+    dominant_pore = "DominantPore"
+
+
+class LabelSets(pydantic.BaseModel):
+    sets: Dict[LabelSetName, LabelSet]
+
+
+class Model(pydantic.BaseModel):
+    label_set: LabelSetName
+    model_name: ModelName
+    frozen: bool
+    path: pydantic.FilePath
+    train_test_split: Dict[str, List[int]]
+
+    def get_model(self, num_classes) -> Tuple[nn.Module]:
+        if self.model_name == 'resnet':
+            return make_resnet18_model(num_classes=num_classes, pretrained=False)
+        else:
+            return make_vgg11_model(num_classes=num_classes, pretrained=False)
+
+
+class ModelZoo(pydantic.BaseModel):
+    models: List[Model]
+
+
+class CAMRequest(pydantic.BaseModel):
+    cam_map: List[List[float]]

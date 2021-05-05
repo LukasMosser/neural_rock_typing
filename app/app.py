@@ -2,7 +2,8 @@ import param
 from holoviews.operation.datashader import rasterize
 import numpy as np
 from neural_rock.cam import GradCam, make_maps
-from neural_rock.app.utils import load_model, load_data, get_train_test_split, Model, compute_images, MEAN_TRAIN, STD_TRAIN
+from neural_rock.app.utils import load_model, load_data, Model, compute_images, MEAN_TRAIN, STD_TRAIN
+from neural_rock.utils import get_train_test_split
 from neural_rock.app.plot import create_holoviews_thinsection, create_holoviews_cam
 from neural_rock.app.viewer import ThinSectionViewer
 from imageio import imread

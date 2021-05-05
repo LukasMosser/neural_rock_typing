@@ -80,8 +80,8 @@ class NeuralRockModel(pl.LightningModule):
                                 lr=self.hparams['learning_rate'], weight_decay=self.hparams['weight_decay'])
 
 
-def make_vgg11_model(num_classes, dropout=0.5):
-    backbone = models.vgg11(pretrained=True)
+def make_vgg11_model(num_classes, pretrained=True, dropout=0.5):
+    backbone = models.vgg11(pretrained=pretrained)
     feature_extractor = backbone.features
     classifier =  nn.Sequential(nn.AdaptiveAvgPool2d(7),
                               nn.Flatten(),
@@ -93,8 +93,8 @@ def make_vgg11_model(num_classes, dropout=0.5):
     return feature_extractor, classifier
 
 
-def make_resnet18_model(num_classes, **kwargs):
-    backbone = models.resnet18(pretrained=True)
+def make_resnet18_model(num_classes, pretrained=True, **kwargs):
+    backbone = models.resnet18(pretrained=pretrained)
     modules = list(backbone.children())[:-1]
     feature_extractor = nn.Sequential(*modules)
     classifier = nn.Sequential(nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Linear(512, num_classes))

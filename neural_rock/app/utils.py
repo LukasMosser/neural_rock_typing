@@ -3,8 +3,9 @@ import torch
 from neural_rock.dataset import ThinSectionDataset
 from neural_rock.model import NeuralRockModel, make_vgg11_model
 import albumentations as A
-import json
 import torch.nn as nn
+from torchvision import transforms
+from torch.autograd import Variable
 
 MEAN_TRAIN = np.array([0.485, 0.456, 0.406])
 STD_TRAIN = np.array([0.229, 0.224, 0.225])
@@ -20,12 +21,6 @@ class Model(nn.Module):
         x = self.feature_extractor(x)
         x = self.fc(x)
         return x
-
-
-def get_train_test_split(path="./data/train_test_split.json"):
-    with open(path) as f:
-        train_test_split = json.load(f)
-    return train_test_split
 
 
 def load_data(labelset):
@@ -70,3 +65,21 @@ def compute_images(X, grad_cam, max_classes, resize, device="cpu"):
         maps.append(gb.cpu().numpy())
     maps = np.stack(maps, axis=0)
     return maps
+
+
+def make_cam_map(X, grad_cam, i, device='cpu', ratio=224.0/512.0):
+    transform = A.Compose([
+        A.Resize(int(ratio * X.shape[0]), int(ratio * X.shape[1])),
+        A.Normalize()])
+
+    X = transform(image=X)['image'].transpose(2, 0, 1)
+    X = Variable(torch.from_numpy(X).unsqueeze(0), requires_grad=True)
+    X = X.to(device)
+    cam_map = compute_cam(X, grad_cam, i, device=device)
+    return cam_map
+
+
+def compute_cam(X, grad_cam, i, device="cpu"):
+    gb = grad_cam(X, i)
+    gb = (gb - np.min(gb)) / (np.max(gb) - np.min(gb))
+    return gb

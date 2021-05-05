@@ -1,3 +1,4 @@
+import json
 import random
 import torch
 import numpy as np
@@ -79,3 +80,9 @@ def get_lr(optimizer):
 
 MEAN_TRAIN = [0.485, 0.456, 0.406]
 STD_TRAIN = [0.229, 0.224, 0.225]
+
+
+def get_train_test_split(path="./data/train_test_split.json"):
+    with open(path) as f:
+        train_test_split = json.load(f)
+    return train_test_split
