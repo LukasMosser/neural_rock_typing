@@ -35,7 +35,7 @@ Download the pretrained model here:
 
 To run the application, open a terminal and execute following commands:
 ```bash
-streamlit run apps/app.py
+streamlit run apps/viewer.py
 ```
 
 This will open up a new browser window with a live application view.

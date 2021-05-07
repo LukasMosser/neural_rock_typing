@@ -7,7 +7,7 @@ WORKDIR /repo
 
 # Copy only the relevant directories to the working diretory
 COPY ./neural_rock/ ./neural_rock
-COPY ./app ./app
+COPY ./viewer ./viewer
 COPY ./api ./api
 COPY ./data ./data
 COPY ./requirements.txt ./requirements.txt

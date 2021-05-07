@@ -114,4 +114,4 @@ async def compute_cam(label_set: LabelSetName,
 handler = Mangum(app=app)
 
 #if __name__ == "__main__":
-#    uvicorn.run(app, host="0.0.0.0", port=8000)
+#    uvicorn.run(viewer, host="0.0.0.0", port=8000)
