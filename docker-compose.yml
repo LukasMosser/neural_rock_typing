@@ -12,8 +12,6 @@ services:
     container_name: neural-rock-api
     command: uvicorn server:app --reload --app-dir /repo/api --host 0.0.0.0 --port 8000
     restart: always
-    volumes:
-      - ./data:/repo/data
   viewer:
     build: .
     environment:
@@ -27,7 +25,5 @@ services:
     container_name: neural-rock-viewer
     depends_on:
       - api
-    volumes:
-      - ./data:/repo/data
     command: python -m panel serve /repo/app/app.py --allow-websocket-origin="*" --port 80
     restart: always
