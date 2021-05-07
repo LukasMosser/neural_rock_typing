@@ -9,7 +9,6 @@ WORKDIR /repo
 COPY ./neural_rock/ ./neural_rock
 COPY ./app ./app
 COPY ./api ./api
-COPY ./data ./data
 COPY ./requirements.txt ./requirements.txt
 
 # Install Python dependencies
