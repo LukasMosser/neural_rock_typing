@@ -16,7 +16,8 @@ valid_layers = {'resnet': list(range(8)),
 
 base_path = Path(os.getenv('WORKDIR'))
 os.chdir(os.getenv('WORKDIR'))
-server_address = "http://{0:}:80/".format(os.getenv('APIHOST'))
+
+server_address = "http://{0:}:8000/".format(os.getenv('APIHOST'))
 
 df = load_label_dataframe(base_path=base_path)
 image_dataset = make_image_dataset(df, base_path=base_path)

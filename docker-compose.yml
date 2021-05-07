@@ -5,23 +5,25 @@ services:
     environment:
       - WORKDIR=/repo/
     expose:
-      - "80"
+      - "8000"
     ports:
-      - "80:80"
-    image: getting-started
-    command: uvicorn server:app --reload --app-dir /repo/api --host 0.0.0.0 --port 80
+      - "8000:8000"
+    image: neural-rock
+    container_name: neural-rock-api
+    command: uvicorn server:app --reload --app-dir /repo/api --host 0.0.0.0 --port 8000
     restart: always
-  app:
+  viewer:
     build: .
     environment:
       - WORKDIR=/repo/
       - APIHOST=api
-    image: getting-started
     expose:
-      - "5006"
+      - "80"
     ports:
-      - "5006:5006"
+      - "80:80"
+    image: neural-rock
+    container_name: neural-rock-viewer
     depends_on:
       - api
-    command: python -m panel serve /repo/app/app.py --allow-websocket-origin="*"
+    command: python -m panel serve /repo/app/app.py --allow-websocket-origin="*" --port 80
     restart: always

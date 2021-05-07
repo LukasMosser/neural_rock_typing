@@ -17,6 +17,6 @@ RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt
 
 # Run the web api
 EXPOSE 80
-EXPOSE 5006
+EXPOSE 8000
 ENV PYTHONPATH /repo
 CMD /bin/bash

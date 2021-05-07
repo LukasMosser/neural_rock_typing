@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: CI-CD-Workflow
 
 # Controls when the action will run. 
 on:
@@ -52,3 +52,15 @@ jobs:
       # Build the app and run tests
       - name: Build and Run Test
         run: . venv/bin/activate && pytest
+
+  dockerhub-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Images
+        run: docker network create my_services && docker-compose up --build -d
+      - name: Publish image(s)
+        run: |
+          docker tag neural-rock ${{ secrets.DOCKER_USERNAME}}/neural-rock:${{ github.sha }} && \
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p "${{ secrets.DOCKER_PASSWORD }}"
+          docker push ${{ secrets.DOCKER_USERNAME}}/neural-rock:${{ github.sha }}
