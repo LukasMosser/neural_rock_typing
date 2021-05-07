@@ -16,7 +16,5 @@ COPY ./requirements.txt ./requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip pip3 install -r requirements.txt
 
 # Run the web api
-EXPOSE 80
-EXPOSE 8000
 ENV PYTHONPATH /repo
 CMD /bin/bash
