@@ -1,9 +1,20 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
 fastapi
 uvicorn
+mangum
 torch==1.8.1+cpu
 torchvision
 numpy
-mangum
 imageio
 pytest
+panel
+holoviews
+datashader
+h5py
+pandas
+xlrd
+scikit-learn
+tqdm
+imageio
+albumentations
+pytorch_lightning

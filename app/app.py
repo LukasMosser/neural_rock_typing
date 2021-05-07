@@ -1,6 +1,7 @@
 import panel as pn
 import holoviews as hv
 from pathlib import Path
+import os
 from neural_rock.app.viewer import ThinSectionViewer
 from neural_rock.server.utils import make_label_sets, init_model_zoo, model_lookup, load_image
 from neural_rock.data_models import make_image_dataset, ModelName, LabelSetName, LabelSets, CAMRequest
@@ -13,8 +14,9 @@ device = 'cpu'
 valid_layers = {'resnet': list(range(8)),
                 'vgg': list(range(21))}
 
-base_path = Path(".")
-server_address = "http://localhost:8000/"
+base_path = Path(os.getenv('WORKDIR'))
+os.chdir(os.getenv('WORKDIR'))
+server_address = "http://{0:}:80/".format(os.getenv('APIHOST'))
 
 df = load_label_dataframe(base_path=base_path)
 image_dataset = make_image_dataset(df, base_path=base_path)

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Dict
 import torch.nn as nn
 import numpy as np
+import os
 from neural_rock.app.utils import make_cam_map
 from neural_rock.model import NeuralRockModel
 from neural_rock.cam import GradCam
@@ -15,7 +16,8 @@ app = FastAPI(title='Neural Rock API')
 
 device = 'cpu'
 valid_layers = {'resnet': list(range(8)), 'vgg': list(range(21))}
-base_path = Path("..")
+base_path = Path(os.getenv('WORKDIR'))
+os.chdir(os.getenv('WORKDIR'))
 
 df = load_label_dataframe(base_path=base_path)
 image_dataset = make_image_dataset(df, base_path=base_path)

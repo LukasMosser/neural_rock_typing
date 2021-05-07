@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    environment:
+      - WORKDIR=/repo/
+    expose:
+      - "80"
+    ports:
+      - "80:80"
+    image: getting-started
+    command: uvicorn server:app --reload --app-dir /repo/api --host 0.0.0.0 --port 80
+    restart: always
+  app:
+    build: .
+    environment:
+      - WORKDIR=/repo/
+      - APIHOST=api
+    image: getting-started
+    expose:
+      - "5006"
+    ports:
+      - "5006:5006"
+    depends_on:
+      - api
+    command: python -m panel serve /repo/app/app.py --allow-websocket-origin="*"
+    restart: always
