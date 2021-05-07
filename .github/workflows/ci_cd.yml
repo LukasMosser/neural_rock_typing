@@ -70,7 +70,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-            - uses: actions/checkout@v2
 
       - uses: actions/checkout@v2
       - name: Build Images
