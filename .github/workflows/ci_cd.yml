@@ -52,15 +52,3 @@ jobs:
       # Build the app and run tests
       - name: Build and Run Test
         run: . venv/bin/activate && pytest
-
-  dockerhub-push:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Upload Repo to S3
-        uses: keithweaver/aws-s3-github-action@master
-        with:
-          command: sync
-          source: .
-          destination: s3://neural-rock/code
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
