@@ -59,14 +59,14 @@ class ThinSectionViewer(param.Parameterized):
 
         return labelsets
 
-    @param.depends('Labelset_Name')
+    @param.depends('Labelset_Name', watch=True)
     def _update_class_names(self):
         class_names = self.label_sets.sets[self.Labelset_Name].class_names
         self.param['Class_Name'].default = class_names[0]
         self.param['Class_Name'].objects = class_names
         self.Class_Name = class_names[0]
 
-    @param.depends('Labelset_Name', 'Model_Selector', watch=True)
+    @param.depends('Labelset_Name', 'Model_Selector')
     def _get_available_image_ids(self):
         with requests.Session() as s:
             result = s.get(self.server_address + 'dataset/sample_ids')
@@ -76,7 +76,6 @@ class ThinSectionViewer(param.Parameterized):
 
         self.label_sets = self._get_labelsets()
         self._update_class_names()
-        self._get_layer_ranges()
 
         samples_text_map = {}
         for sample_id in r:

@@ -6,4 +6,7 @@ neural_rock.egg-info
 results/
 tests/
 wandb/
+.git/
+.github/
+terraform/
 
