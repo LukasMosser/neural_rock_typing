@@ -21,18 +21,23 @@ server_address = "http://{0:}:8000/".format(os.getenv('APIHOST'))
 
 df = load_label_dataframe(base_path=base_path)
 image_dataset = make_image_dataset(df, base_path=base_path)
-label_sets = make_label_sets(df)
-model_zoo = init_model_zoo(base_path=base_path)
 
 theme = pn.template.react.DarkTheme
-explorer = ThinSectionViewer(server_address, image_dataset, label_sets, model_zoo)
-layout_explorer = pn.Row(pn.Column(
-    explorer.param.label_set_name,
-    explorer.param.model_selector,
-    explorer.param.frozen_selector,
-    explorer.param.Class_Name,
-    explorer.param.Image_Name,
-    explorer.param.Network_Layer_Number),
+explorer = ThinSectionViewer(server_address, image_dataset)
+
+control_app = pn.Param(
+    explorer.param,
+    parameters=["Labelset_Name",
+                "Model_Selector",
+                "Frozen_Selector",
+                "Network_Layer_Number",
+                "Class_Name",
+                "Image_Name"],
+    show_name=True
+)
+
+layout_explorer = pn.Row(
+    pn.Column(control_app),
     pn.Column(explorer.view, sizing_mode='stretch_width'),
     sizing_mode='stretch_width')
 

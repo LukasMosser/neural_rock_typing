@@ -31,12 +31,12 @@ class ThinSectionDataset(Dataset):
 
         splitter = StratifiedShuffleSplit(test_size=self.test_split_size, random_state=self.seed)
 
-        dominant_pore = LabelSet(label_map={'IP': 0, 'VUG': 1, 'MO': 2, 'IX': 3, 'WF': 4, 'WP': 4},
+        dominant_pore = LabelSet(label_map={'IP': 0, 'VUG': 1, 'MO': 2, 'IX': 3, 'WF': 4, 'WP': 4, 'WF-WP': 4},
                                  class_names=['IP', 'VUG', 'MO', 'IX', 'WF-WP'],
                                  sample_labels={idx: label for idx, label in
                                                 df[['Sample', 'Macro_Dominant_type']].values})
 
-        dunham = LabelSet(label_map={'rDol': 0, 'B': 1, 'FL': 2, 'G': 3, 'G-P': 4, 'P': 5, 'P-G': 4},
+        dunham = LabelSet(label_map={'rDol': 0, 'B': 1, 'FL': 2, 'G': 3, 'G-P': 4, 'P': 5, 'P-G': 4, 'G-P,P-G': 4},
                           class_names=['rDol', 'B', 'FL', 'G', 'G-P,P-G', 'P'],
                           sample_labels={idx: label for idx, label in df[['Sample', 'Dunham_class']].values})
 

@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   api:
+    build: .
     environment:
       - WORKDIR=/repo/
     expose:
@@ -11,6 +12,7 @@ services:
     command: uvicorn api:app --reload --app-dir /repo/api --host 0.0.0.0 --port 8000
     restart: always
   viewer:
+    build: .
     environment:
       - WORKDIR=/repo/
       - APIHOST=api

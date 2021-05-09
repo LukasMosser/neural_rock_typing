@@ -79,7 +79,7 @@ async def compute_cam(label_set: LabelSetName,
                       frozen: bool,
                       sample_id: int,
                       class_name: str) -> CAMRequest:
-    print(class_name)
+    print(class_name, label_set, sample_id)
     assert class_name in label_sets.sets[label_set].class_names
     model_config = model_lookup(model_zoo, label_set, model_name, frozen)
     assert layer_id in valid_layers[model_name]

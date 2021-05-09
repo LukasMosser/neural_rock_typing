@@ -16,29 +16,29 @@ hv.extension('bokeh')
 
 
 class ThinSectionViewer(param.Parameterized):
-    label_set_name = param.ObjectSelector(default="Lucia", objects=["Dunham", 'Lucia', 'DominantPore'])
+    Labelset_Name = param.ObjectSelector(default="Lucia", objects=["Dunham", 'Lucia', 'DominantPore'], check_on_set=True)
 
-    model_selector = param.ObjectSelector(default="resnet", objects=['vgg', 'resnet'])
-    frozen_selector = param.ObjectSelector(default="True", objects=['True', 'False'])
+    Model_Selector = param.ObjectSelector(default="resnet", objects=['vgg', 'resnet'], check_on_set=True)
+    Frozen_Selector = param.ObjectSelector(default="True", objects=['True', 'False'], check_on_set=True)
 
     Network_Layer_Number = param.Integer(default=0, bounds=(0, 1))
 
-    Class_Name = param.ObjectSelector(default="default", objects=["default"])
+    Class_Name = param.ObjectSelector(default="default", objects=["default"], check_on_set=True)
 
-    Image_Name = param.ObjectSelector(default="default", objects=["default"])
+    Image_Name = param.ObjectSelector(default="default", objects=["default"], check_on_set=True)
 
     def __init__(self, server_address: Path,
-                 image_dataset: ImageDataset, label_sets: LabelSets, model_zoo: ModelZoo,
+                 image_dataset: ImageDataset,
                  **params):
         super(ThinSectionViewer, self).__init__(**params)
         self.server_address = server_address
         self.image_dataset = image_dataset
-        self.label_sets = label_sets
         self.model_zoo = self._get_model_zoo()
         self.label_sets = self._get_labelsets()
         self._get_layer_ranges()
-        self.update_class_names()
+        self._update_class_names()
         self._get_available_image_ids()
+        self.map = self.load_symbol
 
     def _get_model_zoo(self) -> ModelZoo:
         with requests.Session() as s:
@@ -53,24 +53,30 @@ class ThinSectionViewer(param.Parameterized):
             r = loads(result.text)
             labelsets = LabelSets(**r)
 
-        self.param['label_set_name'].default = list(labelsets.sets.keys())[0]
-        self.param['label_set_name'].objects = list(labelsets.sets.keys())
+        self.param['Labelset_Name'].default = list(labelsets.sets.keys())[0]
+        self.param['Labelset_Name'].objects = list(labelsets.sets.keys())
+        self.Labelset_Name = list(labelsets.sets.keys())[0]
 
         return labelsets
 
-    @param.depends('label_set_name', watch=True)
-    def update_class_names(self):
-        class_names = self.label_sets.sets[self.label_set_name].class_names
+    @param.depends('Labelset_Name')
+    def _update_class_names(self):
+        class_names = self.label_sets.sets[self.Labelset_Name].class_names
         self.param['Class_Name'].default = class_names[0]
         self.param['Class_Name'].objects = class_names
+        self.Class_Name = class_names[0]
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', watch=True)
+    @param.depends('Labelset_Name', 'Model_Selector', watch=True)
     def _get_available_image_ids(self):
         with requests.Session() as s:
             result = s.get(self.server_address + 'dataset/sample_ids')
             r = loads(result.text)
 
         train_test_split = self._get_train_test_config()
+
+        self.label_sets = self._get_labelsets()
+        self._update_class_names()
+        self._get_layer_ranges()
 
         samples_text_map = {}
         for sample_id in r:
@@ -82,40 +88,33 @@ class ThinSectionViewer(param.Parameterized):
         self.samples_text_map = samples_text_map
         self.param['Image_Name'].default = list(self.samples_text_map.keys())[0]
         self.param['Image_Name'].objects = list(self.samples_text_map.keys())
+        self.Image_Name = self.param['Image_Name'].objects[0]
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', watch=True)
+    @param.depends('Labelset_Name', 'Model_Selector', 'Frozen_Selector')
     def _get_train_test_config(self):
         with requests.Session() as s:
-            result = s.get(self.server_address + 'get_train_test_images/{0:}/{1:}/{2:}'.format(self.label_set_name,
-                                                                                               self.model_selector.lower(),
-                                                                                               self.frozen_selector))
+            result = s.get(self.server_address + 'get_train_test_images/{0:}/{1:}/{2:}'.format(self.Labelset_Name,
+                                                                                               self.Model_Selector,
+                                                                                               self.Frozen_Selector))
             r = loads(result.text)
 
         return r
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', watch=True)
-    def _load_train_test_split(self):
-        checkpoint_path = "./data/models/{0:}/{1:}/{2:}/".format(self.label_set_name,
-                                                                 self.model_selector.lower(),
-                                                                 self.frozen_selector)
-
-        self.train_test_split = get_train_test_split(path=checkpoint_path + "train_test_split.json")
-
-    @param.depends('model_selector', watch=True)
+    @param.depends('Model_Selector')
     def _get_layer_ranges(self):
         with requests.Session() as s:
-            result = s.get(self.server_address + 'models/{0:}/valid_layer_range'.format(self.model_selector))
+            result = s.get(self.server_address + 'models/{0:}/valid_layer_range'.format(self.Model_Selector))
             r = loads(result.text)
 
         min_layer = r[0]
         max_layer = r[-1]
         self.param['Network_Layer_Number'].default = max_layer
         self.param['Network_Layer_Number'].bounds = (min_layer, max_layer)
-        self.param['Network_Layer_Number'].default = max_layer
+        self.Network_Layer_Number = self.param['Network_Layer_Number'].default
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', 'Network_Layer_Number', 'Class_Name', 'Image_Name')
-    def load_image(self, image_name):
-        image_id = self.samples_text_map[image_name]
+    @param.depends('Image_Name')
+    def load_image(self):
+        image_id = self.samples_text_map[self.Image_Name]
         try:
             X_np = imread(self.image_dataset.image_paths[image_id])
             mask = imread(self.image_dataset.roi_paths[image_id])
@@ -126,35 +125,33 @@ class ThinSectionViewer(param.Parameterized):
             X_np = np.random.uniform(0, 1, size=(1000, 1000, 3))
         return X_np
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', 'Network_Layer_Number', 'Class_Name', 'Image_Name')
+    @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
     def make_map(self):
+        print(self.Class_Name, self.param['Class_Name'].objects)
         sample_id = self.samples_text_map[self.Image_Name]
         with requests.Session() as s:
-            result = s.get(self.server_address + 'cam/{0:}/{1:}/{2:}/{3:}/{4:}/{5:}'.format(self.label_set_name,
-                                                                                              self.model_selector,
+            result = s.get(self.server_address + 'cam/{0:}/{1:}/{2:}/{3:}/{4:}/{5:}'.format(self.Labelset_Name,
+                                                                                              self.Model_Selector,
                                                                                               self.Network_Layer_Number,
-                                                                                              self.frozen_selector,
+                                                                                              self.Frozen_Selector,
                                                                                               sample_id,
                                                                                               self.Class_Name))
             r = loads(result.text)
             map = np.array(r)
         return map
 
-    @param.depends('label_set_name', 'model_selector', 'frozen_selector', 'Network_Layer_Number', 'Class_Name', 'Image_Name')
+    @param.depends('Image_Name')
     def load_symbol(self):
-        import time
-        time.sleep(0.5)
-        X_np = self.load_image(image_name=self.Image_Name)
+        X_np = self.load_image()
         resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
         map = self.make_map()
         map = resize(torch.from_numpy(map).unsqueeze(0)).numpy()[0]
         hv_thinsection = create_holoviews_thinsection(X_np[::-1])
-        hv_cam = create_holoviews_cam(map.T).opts(alpha=0.5,
-                                                             cmap='inferno')
+        hv_cam = create_holoviews_cam(map.T).opts(alpha=0.5, cmap='inferno')
         return hv_thinsection * hv_cam
 
     def view(self):
-        thin_section = hv.DynamicMap(self.load_symbol)
+        thin_section = hv.DynamicMap(self.map)
 
         thin_section = rasterize(thin_section).opts(data_aspect=1.0, frame_height=600, frame_width=1000,
                                                     active_tools=['xwheel_zoom', 'pan'])
