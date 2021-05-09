@@ -37,6 +37,7 @@ class ThinSectionViewer(param.Parameterized):
         self._update_class_names()
         self._get_available_image_ids()
         self.map = self.load_symbol
+        self.probs = self.make_map()[1]#np.zeros(len(self.param['Class_Name'].objects))
 
     def _get_model_zoo(self) -> ModelZoo:
         with requests.Session() as s:
@@ -75,12 +76,13 @@ class ThinSectionViewer(param.Parameterized):
         self.label_sets = self._get_labelsets()
         self._update_class_names()
 
+        labels = self.label_sets.sets[self.Labelset_Name].sample_labels
         samples_text_map = {}
         for sample_id in r:
             if sample_id in train_test_split['train']:
-                samples_text_map["{0:}-Train".format(sample_id)] = sample_id
+                samples_text_map["{0:}-Train-True Class-{1:}".format(sample_id, labels[sample_id])] = sample_id
             elif sample_id in train_test_split['test']:
-                samples_text_map["{0:}-Test".format(sample_id)] = sample_id
+                samples_text_map["{0:}-Test-True Class-{1:}".format(sample_id, labels[sample_id])] = sample_id
 
         self.samples_text_map = samples_text_map
         self.param['Image_Name'].default = list(self.samples_text_map.keys())[0]
@@ -97,7 +99,7 @@ class ThinSectionViewer(param.Parameterized):
 
         return r
 
-    @param.depends('Model_Selector')
+    @param.depends('Model_Selector', watch=True)
     def _get_layer_ranges(self):
         with requests.Session() as s:
             result = s.get(self.server_address + 'models/{0:}/valid_layer_range'.format(self.Model_Selector))
@@ -124,7 +126,6 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
     def make_map(self):
-        print(self.Class_Name, self.param['Class_Name'].objects)
         sample_id = self.samples_text_map[self.Image_Name]
         with requests.Session() as s:
             result = s.get(self.server_address + 'cam/{0:}/{1:}/{2:}/{3:}/{4:}/{5:}'.format(self.Labelset_Name,
@@ -134,18 +135,27 @@ class ThinSectionViewer(param.Parameterized):
                                                                                               sample_id,
                                                                                               self.Class_Name))
             r = loads(result.text)
-            map = np.array(r)
-        return map
+            map = np.array(r['map'])
+            probs = r['y_prob']
+        self.probs = probs
+        return map, probs
 
     @param.depends('Image_Name')
     def load_symbol(self):
         X_np = self.load_image()
         resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
-        map = self.make_map()
+        map, _ = self.make_map()
         map = resize(torch.from_numpy(map).unsqueeze(0)).numpy()[0]
         hv_thinsection = create_holoviews_thinsection(X_np[::-1])
         hv_cam = create_holoviews_cam(map.T).opts(alpha=0.5, cmap='inferno')
         return hv_thinsection * hv_cam
+
+    @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
+    def bar_plot(self):
+        data = [(clas, prob) for clas, prob in zip(self.param['Class_Name'].objects, self.probs)]
+        bars = hv.Bars(data, hv.Dimension('Class Name'), 'Probability')
+
+        return bars
 
     def view(self):
         thin_section = hv.DynamicMap(self.map)

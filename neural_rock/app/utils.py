@@ -77,7 +77,11 @@ def make_cam_map(X, grad_cam, i, device='cpu', ratio=224.0/512.0):
     X = Variable(torch.from_numpy(X).unsqueeze(0), requires_grad=True)
     X = X.to(device)
     cam_map = compute_cam(X, grad_cam, i, device=device)
-    return cam_map
+
+    with torch.no_grad():
+        y_prob = torch.nn.functional.softmax(grad_cam.model(X), dim=1)
+
+    return cam_map, y_prob
 
 
 def compute_cam(X, grad_cam, i, device="cpu"):

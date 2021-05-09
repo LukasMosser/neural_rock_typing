@@ -71,7 +71,6 @@ async def get_train_test_images(label_set: LabelSetName,
     model_config = model_lookup(model_zoo, label_set, model_name, frozen)
     return model_config.train_test_split
 
-
 @app.get("/cam/{label_set}/{model_name}/{layer_id}/{frozen}/{sample_id}/{class_name}")
 async def compute_cam(label_set: LabelSetName,
                       model_name: ModelName,
@@ -103,13 +102,14 @@ async def compute_cam(label_set: LabelSetName,
                   device=device)
 
     img = load_image(image_dataset, sample_id)
-    map = make_cam_map(img,
+    map, probs = make_cam_map(img,
                        cam,
                        label_sets.sets[label_set].label_to_class(class_name),
                        device=device)
-    print(map.shape)
+
     cam_request = CAMRequest(cam_map=np.nan_to_num(map).tolist())
-    return cam_request.cam_map
+    return {"map": cam_request.cam_map, "y_prob": probs[0].cpu().numpy().tolist()}
+
 
 handler = Mangum(app=app)
 
