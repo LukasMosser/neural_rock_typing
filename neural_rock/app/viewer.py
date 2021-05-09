@@ -1,12 +1,10 @@
 import param
 from holoviews.operation.datashader import rasterize
 import numpy as np
-from neural_rock.utils import get_train_test_split
 from neural_rock.app.plot import create_holoviews_thinsection, create_holoviews_cam
 from imageio import imread
 import holoviews as hv
 from neural_rock.data_models import ImageDataset, ModelZoo, LabelSets
-from neural_rock.server.utils import model_lookup
 from torchvision import transforms
 from pathlib import Path
 import torch

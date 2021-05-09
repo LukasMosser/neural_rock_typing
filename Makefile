@@ -8,7 +8,19 @@ build:
 	COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
 
 api:
-	WORKDIR=. uvicorn api:app --reload --app-dir ./api/ --host 0.0.0.0 --port 8000
+	export WORKDIR=.; uvicorn api:app --reload --app-dir ./api/ --host 0.0.0.0 --port 8000
 
 viewer:
-	WORKDIR=. APIHOST=localhost python -m panel serve ./viewer/viewer.py --allow-websocket-origin="*"
+	export WORKDIR=.; export APIHOST=localhost; python -m panel serve ./viewer/viewer.py --allow-websocket-origin="*"
+
+app:
+	export WORKDIR=.; export APIHOST=localhost; python -m panel serve ./viewer/viewer.py --allow-websocket-origin="*" & \
+	uvicorn api:app --reload --app-dir ./api/ --host 0.0.0.0 --port 8000
+
+make docker-app:
+	docker-compose up -d & docker-compose logs -t -f
+
+make docker-down:
+	docker-compose down
+
+.PHONY: app api viewer docker-app docker-down
