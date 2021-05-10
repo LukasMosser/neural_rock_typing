@@ -1,43 +1,110 @@
-# Neural Rock Typing
-Can machines help us understand how to distinguish rock types?
+# Neural Rock
+## Do Machines See Rocks Like Geologists do?
 
 ### Authors
 
 Gregor Baechle, George Ghon, Lukas Mosser
 _Carbonate Complexities Group_, 2020
 
-## Colab Training
+## Introduction
+
+This project aims to investigate the ability of neural networks to classify carbonate rocks from thin-sections for 
+various carbonate classification schemes. More importantly we seek to understand whether neural networks
+use similar visual and textural features to classify each image. 
+
+To investigate this we use the Gradient Class Activation Maps (GradCAM) [Distill.Pub Article](https://distill.pub/2020/attribution-baselines/) to show highlighting features
+where a neural network is "looking" in an image to make its decision on which carbonate class to predict.
+
+These class activation maps are dependent on the architecture and weights of a model and we therefore provide 
+here pre-trained models and code infrastructure to train various convolutional networks and a viewer application 
+to visualize the CAM maps and the predictions of each network.
+
+### Network types
+
+We provide pretrained ResNet18 and VGG11 models that either use ImageNet pretrained activations in the feature 
+extractor or have been fine-tuned i.e. training of the feature extractor with a very small learning rate.
+
+### Viewer Application
+
+We provide a viewer application that allows inspection and visualization of the results.
+To run the application first install [Docker](https://docs.docker.com/compose/) and [Docker-Compose](https://docs.docker.com/compose/).
+
+Once finished start the application by calling:
+```bash
+docker-compose up -d 
+```
+and navigating to the viewer at [localhost/viewer](http://localhost/viewer).
+
+You should be greeted by the following interface:
+
+![Viewer](static/viewer.png)
+
+Here you can switch between different carbonate classification schemes (Labselset Name),
+different CNN architectures (Model Selector), whether to use a frozen or trained feature extractor 
+(Frozen Selector), the network layer to visualize for CAM maps (Network Layer Number), with respect 
+to which class you want to activate the network (Class Name), and finally a selection of all the images 
+in the dataset, with an indication on whether they were used in the training set, or not, as well as their 
+ground-truth label, as identified by a carbonate geologist.
+
+A histogram of the predictions for the network is given below.  
+
+The viewer builds on [Panel](https://panel.holoviz.org/reference/panes/HoloViews.html), [Holoviews](https://holoviews.org/), and [Bokeh](https://docs.bokeh.org/en/latest/index.html)
+
+### API Specification
+
+Interested viewers can also access the api that runs behind the scenes to serve model predictions.
+Navigate in your browser to [http://localhost:8000/docs](http://localhost:8000/docs) once the app is 
+running to see the OpenAPI specification. The API is build on [FastAPI](https://fastapi.tiangolo.com/)
+
+### Deploying on AWS
+
+For sharing we have used [Hashicorp Terraform](https://www.terraform.io/) to provide an Infrastructure as Code that will 
+deploy a worker on AWS EC2. This allows us to reduce manual work to be done to spin-up a machine to serve the model.  
+Integrating an [Ansible Playbook](https://www.ansible.com/) could be considered future work.
+
+### Model Training
 
 To load a notebook for training a model in Google Colab, follow this link:  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/]
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/)
 
-## Install Environment
+We have made use of [Weights And Biases](https://wandb.ai) to organize all our ML experiments.
+The dashboard for all model training runs executed as a sweep can be found [here](https://wandb.ai/ccg/neural-rock-finak-2).
 
-Install the provided conda environment:
-```bash
-conda env create -f environment.yml
-```
+![Weights&Biases Dashboard](static/wandb.png)
 
-# Training Dataset
+To make training on google colab efficient we preload the entire dataset onto the GPU as to keep hard-disk and cloud storage latency to a minimum.
 
-Find and download dataset here:
+### Dataset and Weights
 
-[Gdrive](https://drive.google.com/drive/folders/1_xBydGIVzWQe9htU3Yacqa34h2vEGoE5?usp=sharing)
+The dataset and model weights will be released in the coming weeks, but are included in the docker-images, so 
+you are ready to run if you wish to play with the application locally.
 
-based on: [Digital Rocks Portal](https://www.digitalrocksportal.org/projects/215)
+## Future Work
 
-## Model Checkpoint
+Some initial testing has been done to incorporate [Captum](https://captum.ai/) to provide other model interpretability methods
+for CNNs, but there is no time left in the project to implement this currently.
 
-Download the pretrained model here:
-[Gdrive](https://drive.google.com/drive/folders/1vtct_onMmL2Ax13hMILwJRoGDG_GMDev?usp=sharing)
+### Credit and Thanks
 
-## Running the application
+If you find this useful feel free to credit where appropriate.  
+A detailed publication on the outcomes of our findings is in the works.
 
-To run the application, open a terminal and execute following commands:
-```bash
-streamlit run apps/viewer.py
-```
+We also wish to thank the organizers of the [Full Stack Deep Learning Course](https://fullstackdeeplearning.com/) for an excellent programme 
+and for providing an incentive to create and share this work. 
 
-This will open up a new browser window with a live application view.
+Libraries and Articles that have contributed to this repository:
+
+[Full Stack Deep Learning](https://fullstackdeeplearning.com/),
+[pytorch-grad-cam by JacobGil](https://github.com/jacobgil/pytorch-grad-cam),
+[Terraform with Nana](https://www.youtube.com/watch?v=l5k1ai_GBDE),
+[Distill.Pub](https://distill.pub/)
+[Pytorch](https://pytorch.org/),
+[Google Colab](https://colab.research.google.com),
+[Pytorch Lightning](https://pytorch-lightning.readthedocs.io/en/latest/),
+[Weights And Biases](https://wandb.ai),
+[Captum](https://captum.ai/),
+[Panel](https://panel.holoviz.org/reference/panes/HoloViews.html),
+[Holoviews](https://holoviews.org/),
+[Bokeh](https://docs.bokeh.org/en/latest/index.html),
 
 
