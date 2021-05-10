@@ -104,6 +104,8 @@ In our case, RAM requirements are quite high due to the need to backpropagate to
 Nevertheless, one could design a better system to scale out the API using AWS ECS or similar approaches, maybe even Lambda type functions.  
 Definitely something to learn for the future :) 
 
+Unit and Integration Tests: The cake was a lie...
+
 ## Credit and Thanks
 
 If you find this useful feel free to credit where appropriate.  
