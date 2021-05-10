@@ -8,6 +8,9 @@ from neural_rock.app.utils import compute_images
 import holoviews as hv
 hv.extension('bokeh')
 
+"""
+ pytorch-grad-cam by JacobGil (https://github.com/jacobgil/pytorch-grad-cam)
+"""
 
 class FeatureExtractor(object):
     """ Class for extracting activations and

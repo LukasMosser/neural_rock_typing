@@ -56,7 +56,7 @@ def main(args):
             ])
     }
 
-    base_path = Path(".")
+    base_path = Path("..")
 
     train_dataset_base = ThinSectionDataset(base_path, args.labelset,
                                             preload_images=True,

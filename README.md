@@ -97,6 +97,13 @@ you are ready to run if you wish to play with the application locally.
 Some initial testing has been done to incorporate [Captum](https://captum.ai/) to provide other model interpretability methods
 for CNNs, but there is no time left in the project to implement this currently.
 
+In terms of deployment, there is much room for improvement as the application does not "scale" currently.  
+The process of building a well-scaling application that builds on machine learning beyond the *How to deploy your sklearn model on AWS Lambda Tutoria* 
+is a non-trivial task especially if you can't make use of good inference libraries that take care of alot of that work for you.
+In our case, RAM requirements are quite high due to the need to backpropagate to get CAM maps and that puts special burden on deployment infrastructure.  
+Nevertheless, one could design a better system to scale out the API using AWS ECS or similar approaches, maybe even Lambda type functions.  
+Definitely something to learn for the future :) 
+
 ### Credit and Thanks
 
 If you find this useful feel free to credit where appropriate.  
