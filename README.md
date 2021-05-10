@@ -3,7 +3,7 @@
 
 ### Authors
 
-Gregor Baechle, George Ghon, Lukas Mosser
+[Gregor Baechle](https://www.linkedin.com/in/gbaechle/), [George Ghon](https://www.linkedin.com/in/george-g-30015639/), [Lukas Mosser](https://at.linkedin.com/in/lukas-mosser)
 _Carbonate Complexities Group_, 2020
 
 ## Introduction
