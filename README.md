@@ -48,6 +48,17 @@ ground-truth label, as identified by a carbonate geologist.
 
 A histogram of the predictions for the network is given below.  
 
+Once you have finished working with the application you can shut-down the Docker container:
+```bash
+docker-compose down
+```
+
+If you wish to inspect the logs while the application is running run in a terminal:
+```bash
+docker-compose logs -t -f
+```
+which will show you a running log of the application status while you work with it.
+
 The viewer builds on [Panel](https://panel.holoviz.org/reference/panes/HoloViews.html), [Holoviews](https://holoviews.org/), and [Bokeh](https://docs.bokeh.org/en/latest/index.html)
 
 ### API Specification
