@@ -24,7 +24,7 @@ to visualize the CAM maps and the predictions of each network.
 We provide pretrained ResNet18 and VGG11 models that either use ImageNet pretrained activations in the feature 
 extractor or have been fine-tuned i.e. training of the feature extractor with a very small learning rate.
 
-### Viewer Application
+## Neural Rock Application
 
 We provide a viewer application that allows inspection and visualization of the results.
 To run the application first install [Docker](https://docs.docker.com/compose/) and [Docker-Compose](https://docs.docker.com/compose/).
@@ -104,7 +104,7 @@ In our case, RAM requirements are quite high due to the need to backpropagate to
 Nevertheless, one could design a better system to scale out the API using AWS ECS or similar approaches, maybe even Lambda type functions.  
 Definitely something to learn for the future :) 
 
-### Credit and Thanks
+## Credit and Thanks
 
 If you find this useful feel free to credit where appropriate.  
 A detailed publication on the outcomes of our findings is in the works.
