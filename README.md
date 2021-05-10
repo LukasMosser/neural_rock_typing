@@ -61,6 +61,8 @@ which will show you a running log of the application status while you work with 
 
 The viewer builds on [Panel](https://panel.holoviz.org/reference/panes/HoloViews.html), [Holoviews](https://holoviews.org/), and [Bokeh](https://docs.bokeh.org/en/latest/index.html)
 
+Docker Images are hosted on [Dockerhub](https://hub.docker.com/repository/docker/lmoss/neural-rock).
+
 ### API Specification
 
 Interested viewers can also access the api that runs behind the scenes to serve model predictions.
