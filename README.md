@@ -3,7 +3,7 @@
 
 ### Authors
 
-[Gregor Baechle](https://www.linkedin.com/in/gbaechle/), [George Ghon](https://www.linkedin.com/in/george-g-30015639/), [Lukas Mosser](https://at.linkedin.com/in/lukas-mosser)
+[Gregor Baechle](https://www.linkedin.com/in/gbaechle/), [George Ghon](https://www.linkedin.com/in/george-g-30015639/), [Lukas Mosser](https://at.linkedin.com/in/lukas-mosser)  
 _Carbonate Complexities Group_, 2020
 
 ## Introduction
@@ -18,6 +18,11 @@ where a neural network is "looking" in an image to make its decision on which ca
 These class activation maps are dependent on the architecture and weights of a model and we therefore provide 
 here pre-trained models and code infrastructure to train various convolutional networks and a viewer application 
 to visualize the CAM maps and the predictions of each network.
+
+Due to the extremely small dataset of ~80 images, a transfer learning approach was used to train ImageNet pretrained models.
+Because each image has dimensions of > 3000 x 2000 pixels we randomly extract patches at 224x224 pixels and feature preserving
+data augmentation to regularize model training and to (hopefully) prevent overfitting. Regardless, results should be evaluated on the
+test-split of the datasets, indicated in the viewer app for each model.  
 
 ### Network types
 
