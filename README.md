@@ -83,6 +83,8 @@ Integrating an [Ansible Playbook](https://www.ansible.com/) could be considered 
 To load a notebook for training a model in Google Colab, follow this link:  
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/)
 
+Update: There seems to be an issue with colab crashing currently we recommend running ```train/train.py instead```
+
 We have made use of [Weights And Biases](https://wandb.ai) to organize all our ML experiments.
 The dashboard for all model training runs executed as a sweep can be found [here](https://wandb.ai/ccg/neural-rock-finak-2).
 
@@ -94,6 +96,19 @@ To make training on google colab efficient we preload the entire dataset onto th
 
 The dataset and model weights will be released in the coming weeks, but are included in the docker-images, so 
 you are ready to run if you wish to play with the application locally.
+
+### Dataset Augmentation
+
+We make use of heavy dataset augmentation to ensure the network focuses on textural features.
+We therefore perform colorspace jittering in HSV space as a data-augmentation.
+Here a batch of images as the network sees them at training time:
+![Training Images](static/train_augmentation.png)
+
+
+During prediction time we only crop and resize the images, but do not perform any color-jittering
+as to preserve the image dataset color distribution.
+Here a batch of images as seen during the validation step:
+![Validation Images](static/test_augmentation.png)
 
 ## Future Work
 
