@@ -81,9 +81,11 @@ Integrating an [Ansible Playbook](https://www.ansible.com/) could be considered 
 ### Model Training
 
 To load a notebook for training a model in Google Colab, follow this link:  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/notebooks/Neural_Rock_Typing_Sweep_Train_All_Models.ipynb)
 
-Update: There seems to be an issue with colab crashing currently we recommend running ```train/train.py instead```
+_Update May 2021:_
+There seems to be an issue with Colab crashing due to incompatibility with Pytorch Lightning
+Training of individual models can also be performed via `train/train.py`
 
 We have made use of [Weights And Biases](https://wandb.ai) to organize all our ML experiments.
 The dashboard for all model training runs executed as a sweep can be found [here](https://wandb.ai/ccg/neural-rock-finak-2).
