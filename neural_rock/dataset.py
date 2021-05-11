@@ -1,8 +1,8 @@
 import torch
 from torch.utils.data import Dataset
+from pathlib import Path
 from imageio import imread
 import numpy as np
-from neural_rock import preprocess as pre
 from sklearn.model_selection import StratifiedShuffleSplit
 from skimage.util import img_as_float
 from neural_rock.preprocess import load_label_dataframe
@@ -10,7 +10,18 @@ from neural_rock.data_models import make_image_dataset, LabelSet, PreloadedImage
 
 
 class ThinSectionDataset(Dataset):
-    def __init__(self, base_path, label_set, transform=None, seed=42, test_split_size=0.5, train=True, preload_images=True):
+    """
+    Base Pytorch Dataset for the Thin Section dataset in Neural Rock.
+    Currently only works with Leg194 data.
+    Optionally preloads all images to memory prior to running training process.
+    """
+    def __init__(self, base_path: Path,
+                 label_set: str,
+                 transform=None,
+                 seed: int = 42,
+                 test_split_size: float = 0.5,
+                 train: bool = True,
+                 preload_images: bool = True):
         super(ThinSectionDataset, self).__init__()
         self.base_path = base_path
         self.train = train
@@ -26,6 +37,11 @@ class ThinSectionDataset(Dataset):
             self.dataset = self._preload_images()
 
     def _make_dataset(self):
+        """
+        Sets up the Leg194 base dataset.
+        Makes use of same Baseclasses as used for the API.
+        Should be a bit cleaned up to reduce redundancy of loading these labelsets.
+        """
         df = load_label_dataframe(self.base_path)
         image_dataset = make_image_dataset(df, base_path=self.base_path)
 
@@ -65,6 +81,9 @@ class ThinSectionDataset(Dataset):
         return dataset, label_set
 
     def _preload_images(self):
+        """
+        Preloads images from disk to memory.
+        """
         images = {}
         if self.preload_images:
             for key in self.dataset.image_paths.keys():
@@ -82,6 +101,9 @@ class ThinSectionDataset(Dataset):
         return len(self.dataset.image_paths)
 
     def __getitem__(self, idx):
+        """
+        Gets an image from the dataset, applies a transform (optional), and returns it.
+        """
         sample = list(self.dataset.image_paths.keys())[idx]
 
         X = torch.from_numpy(img_as_float(self.dataset.images[sample])).permute(2, 0, 1)
@@ -94,11 +116,19 @@ class ThinSectionDataset(Dataset):
 
 
 class GPUThinSectionDataset(ThinSectionDataset):
+    """
+    Derived class that provides functionality to preload images to GPU memory.
+    Used mainly for colab training.
+    """
     def __init__(self, *args, **kwargs):
         super(GPUThinSectionDataset, self).__init__(*args, **kwargs)
         self.dataset = self._gpu_preload_images()
 
     def _gpu_preload_images(self):
+        """
+        Preloads images into tensors on GPU memory.
+        Requires pretty beefy GPU > 12 GB of memory for Leg194 dataset.
+        """
         for idx, img in self.dataset.images:
             self.dataset.images[idx] = torch.from_numpy(img_as_float(img)).permute(2, 0, 1).cuda().half()
 
@@ -115,6 +145,9 @@ class GPUThinSectionDataset(ThinSectionDataset):
         return len(self.dataset.images.keys())
 
     def __getitem__(self, idx):
+        """
+        Gets an image from the dataset, applies a transform (optional), and returns it.
+        """
         sample = list(self.dataset.images.keys())[idx]
         X = self.images[sample].float()
 

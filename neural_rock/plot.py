@@ -1,23 +1,12 @@
-import numpy as np
 import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
+from neural_rock.utils import MEAN_TRAIN, STD_TRAIN
 
 
-def imshow(inp, title=None):
-    """Imshow for Tensor."""
-    inp = inp.numpy().transpose((1, 2, 0))
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    inp = std * inp + mean
-    inp = np.clip(inp, 0, 1)
-    plt.imshow(inp)
-    if title is not None:
-        plt.title(title)
-    plt.pause(0.001)  # pause a bit so that plots are updated
-
-
-def visualize_batch(loader):
-    from neural_rock.utils import MEAN_TRAIN, STD_TRAIN
-
+def visualize_batch(loader: DataLoader):
+    """
+    Plots a batch of images in the right color scaling.
+    """
     fig, axarr = plt.subplots(4, 4, figsize=(12, 12))
     for dat, _ in loader:
         break

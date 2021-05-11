@@ -1,18 +1,19 @@
 from enum import Enum
-
+from pathlib import Path
+from typing import List, Dict, Tuple
 import pandas as pd
 import pydantic
-from typing import List, Dict, Tuple
-from pathlib import Path
 import torch
-import numpy
 from torch import nn as nn
-
+import numpy
 from neural_rock.model import make_resnet18_model, make_vgg11_model
 from neural_rock.preprocess import get_image_paths
 
 
 class ImageDataset(pydantic.BaseModel):
+    """
+    Contains paths to the images and the ROI images that mask the outer regions of the thin-sections.
+    """
     image_paths: Dict[int, pydantic.FilePath]
     roi_paths: Dict[int, pydantic.FilePath]
 
@@ -22,6 +23,9 @@ class ImageDataset(pydantic.BaseModel):
 
 
 class PreloadedImageDataset(ImageDataset):
+    """
+    A container class for preloaded Images. Deprecated
+    """
     images: Dict[int, numpy.ndarray]
 
     def __init_subclass__(cls, optional_fields=None, **kwargs):
@@ -32,6 +36,10 @@ class PreloadedImageDataset(ImageDataset):
 
 
 class GPUPreloadedImageDataset(ImageDataset):
+    """
+    Data class to store preloaded Tensors.
+    Used for training on Colab.
+    """
     images: Dict[int, torch.Tensor]
     labels: Dict[int, torch.Tensor]
 
@@ -43,6 +51,11 @@ class GPUPreloadedImageDataset(ImageDataset):
 
 
 class LabelSet(pydantic.BaseModel):
+    """
+    Base data model for Labelsets.
+    Provide access to each label sets class names, a mapping between index and class label representation
+    and assignment of each samples label.
+    """
     label_map: Dict[str, int]
     class_names: List[str]
     sample_labels: Dict[int, str]
@@ -74,30 +87,35 @@ class LabelSet(pydantic.BaseModel):
         return len(self.class_names)
 
 
-def make_image_dataset(df: pd.DataFrame, base_path: Path=Path("..")) -> ImageDataset:
-    sample_ids, image_paths, roi_paths = get_image_paths(base_path=base_path)
-    image_paths = {idx: path for idx, path in image_paths.items() if idx in df['Sample'].values}
-    roi_paths = {idx: path for idx, path in roi_paths.items() if idx in df['Sample'].values}
-    image_dataset = ImageDataset(image_paths=image_paths, roi_paths=roi_paths)
-    return image_dataset
-
-
 class ModelName(str, Enum):
+    """
+    Enum for valid model names defined in Neural Rock
+    """
     resnet = "resnet"
     vgg = "vgg"
 
 
 class LabelSetName(str, Enum):
+    """
+    Enum for valid Labelset names in Neural Rock
+    """
     dunham = "Dunham"
     lucia = "Lucia"
     dominant_pore = "DominantPore"
 
 
 class LabelSets(pydantic.BaseModel):
+    """
+    Base model for label sets. Used in the API of Neural Rock
+    """
     sets: Dict[LabelSetName, LabelSet]
 
 
 class Model(pydantic.BaseModel):
+    """
+    Defines a Model and it's configuration.
+    Used for the api and to grab info about each of the provided models.
+    """
     label_set: LabelSetName
     model_name: ModelName
     frozen: bool
@@ -112,8 +130,26 @@ class Model(pydantic.BaseModel):
 
 
 class ModelZoo(pydantic.BaseModel):
+    """
+    Contains all the models defined in Neural Rock
+    """
     models: List[Model]
 
 
 class CAMRequest(pydantic.BaseModel):
+    """
+    Return type for the API used to provide the cam_map
+    """
     cam_map: List[List[float]]
+
+
+def make_image_dataset(df: pd.DataFrame,
+                       base_path: Path=Path("..")) -> ImageDataset:
+    """
+    Creates the image dataset for the Leg194 dataset.
+    """
+    sample_ids, image_paths, roi_paths = get_image_paths(base_path=base_path)
+    image_paths = {idx: path for idx, path in image_paths.items() if idx in df['Sample'].values}
+    roi_paths = {idx: path for idx, path in roi_paths.items() if idx in df['Sample'].values}
+    image_dataset = ImageDataset(image_paths=image_paths, roi_paths=roi_paths)
+    return image_dataset

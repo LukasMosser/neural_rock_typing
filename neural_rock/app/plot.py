@@ -1,7 +1,6 @@
 import numpy as np
 import xarray as xa
 import holoviews as hv
-from holoviews.operation.datashader import rasterize
 from datashader.utils import ngjit
 import datashader as ds
 hv.extension('bokeh')
@@ -26,12 +25,18 @@ def normalize_data(agg):
 
 
 def combine_bands(r, g, b):
+    """
+    Recombines colorbands
+    """
     xs, ys = r['y'], r['x']
     r, g, b = [ds.utils.orient_array(im) for im in (r, g, b)]
     return hv.RGB((xs, ys[::-1], r, g, b), vdims=list('RGB'))
 
 
 def create_holoviews_cam(cam):
+    """
+    Create holoviews object of thin-section image.
+    """
     coords = {'x': np.arange(cam.shape[0]), 'y': np.arange(cam.shape[1])}
 
     cam = xa.DataArray(name='cam', data=cam, coords=coords, dims=['x', 'y'])
@@ -40,6 +45,9 @@ def create_holoviews_cam(cam):
 
 
 def create_holoviews_thinsection(image_patch):
+    """
+    Create Holoviews compatible xarray for RGB image
+    """
     coords = {'x': np.arange(image_patch.shape[0]), 'y': np.arange(image_patch.shape[1])}
 
     r_ = xa.DataArray(name='r', data=image_patch[..., 0], coords=coords, dims=['x', 'y'])

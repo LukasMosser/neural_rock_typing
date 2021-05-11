@@ -1,10 +1,6 @@
-from torch.autograd import Function
 import numpy as np
-from torchvision import transforms
 import torch
-from torch.autograd import Variable
-import albumentations as A
-from neural_rock.app.utils import compute_images
+from torch.autograd import Function
 import holoviews as hv
 hv.extension('bokeh')
 
@@ -62,22 +58,6 @@ class ModelOutputs():
                     x = module(x)
 
         return target_activations, x
-
-
-def make_maps(X_np, grad_cam, num_classes, device='cpu', ratio=224.0 / 512):
-
-    transform = A.Compose([
-        A.Resize(int(ratio * X_np.shape[0]), int(ratio * X_np.shape[1])),
-        A.Normalize()])
-
-    resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
-
-    X = transform(image=X_np)['image'].transpose(2, 0, 1)
-    X = Variable(torch.from_numpy(X).unsqueeze(0), requires_grad=True).to(device)
-    X = X.to(device)
-
-    maps = compute_images(X, grad_cam, num_classes, resize=resize, device=device)
-    return maps
 
 
 class GradCam:

@@ -12,18 +12,36 @@ from neural_rock.server.utils import make_label_sets, init_model_zoo, model_look
 from neural_rock.data_models import make_image_dataset, ModelName, LabelSetName, LabelSets, CAMRequest
 from neural_rock.preprocess import load_label_dataframe
 
+"""
+Main API of Neural Rock
+
+Provides functionality to query datasets and compute CAM maps with available pretrained models.
+
+Run with uvicorn server and navigate to localhost:8000/docs to see OpenAPI specification.
+"""
+
+# Instantianting the API
 app = FastAPI(title='Neural Rock API')
 
-device = 'cpu'
-valid_layers = {'resnet': list(range(8)), 'vgg': list(range(21))}
-base_path = Path(os.getenv('WORKDIR'))
-os.chdir(os.getenv('WORKDIR'))
+device = 'cpu' # Preconfigured for CPU
+valid_layers = {'resnet': list(range(8)), 'vgg': list(range(21))} # Valid Layers for each model type
+base_path = Path(os.getenv('WORKDIR')) # Base path of data directories from environment variables
+os.chdir(os.getenv('WORKDIR')) # Changing to workdir
 
+# Load the dataframe of the Leg194 dataset
 df = load_label_dataframe(base_path=base_path)
+
+# Load the Image Dataset for the Thin Sections
 image_dataset = make_image_dataset(df, base_path=base_path)
+
+# Load the available label sets
 label_sets = make_label_sets(df)
+
+# Load the Model zoo of available pretrained models
 model_zoo = init_model_zoo(base_path=base_path)
 
+
+# Defines Routes below that specify the API
 
 @app.get("/")
 async def root():
@@ -59,6 +77,7 @@ async def get_roi_path(sample_id: int) -> Path:
 async def get_sample_ids() -> List[int]:
     return list(image_dataset.image_paths.keys())
 
+
 @app.get("/models/{model_name}/valid_layer_range")
 async def get_valid_layer_range(model_name: ModelName) -> List[int]:
     return valid_layers[model_name]
@@ -71,6 +90,7 @@ async def get_train_test_images(label_set: LabelSetName,
     model_config = model_lookup(model_zoo, label_set, model_name, frozen)
     return model_config.train_test_split
 
+
 @app.get("/cam/{label_set}/{model_name}/{layer_id}/{frozen}/{sample_id}/{class_name}")
 async def compute_cam(label_set: LabelSetName,
                       model_name: ModelName,
@@ -78,7 +98,10 @@ async def compute_cam(label_set: LabelSetName,
                       frozen: bool,
                       sample_id: int,
                       class_name: str) -> CAMRequest:
-    print(class_name, label_set, sample_id)
+    """
+    Computes the CAM Map for a given model in the ModelZoo
+    Returns the non-upscaled CAM map and the softmax-probabilities
+    """
     assert class_name in label_sets.sets[label_set].class_names
     model_config = model_lookup(model_zoo, label_set, model_name, frozen)
     assert layer_id in valid_layers[model_name]
@@ -110,8 +133,6 @@ async def compute_cam(label_set: LabelSetName,
     cam_request = CAMRequest(cam_map=np.nan_to_num(map).tolist())
     return {"map": cam_request.cam_map, "y_prob": probs[0].cpu().numpy().tolist()}
 
-
+# Deprecated handler in case this would be wrapped into a Lambda function
 handler = Mangum(app=app)
 
-#if __name__ == "__main__":
-#    uvicorn.run(viewer, host="0.0.0.0", port=8000)

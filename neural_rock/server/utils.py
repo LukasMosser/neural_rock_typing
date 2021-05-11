@@ -1,13 +1,15 @@
 from pathlib import Path
-
 import numpy as np
+import pandas as pd
 from imageio import imread
-
 from neural_rock.data_models import LabelSet, LabelSets, Model, ModelZoo, LabelSetName, ModelName, ImageDataset
 from neural_rock.utils import get_train_test_split
 
 
-def make_label_sets(df):
+def make_label_sets(df: pd.DataFrame) -> LabelSets:
+    """
+    Create all the pre-defined Labelsets in Neural Rock
+    """
     dominant_pore = LabelSet(label_map={'IP': 0, 'VUG': 1, 'MO': 2, 'IX': 3, 'WF': 4, 'WP': 4, 'WF-WP': 4},
                              class_names=['IP', 'VUG', 'MO', 'IX', 'WF-WP'],
                              sample_labels={idx: label for idx, label in
@@ -25,7 +27,10 @@ def make_label_sets(df):
                                  'Lucia': lucia})
 
 
-def init_model_zoo(base_path: Path):
+def init_model_zoo(base_path: Path) -> ModelZoo:
+    """
+    Initializes the model zoo for the API.
+    """
     models = []
     for label_set in ['Dunham', 'DominantPore', 'Lucia']:
         for model in ['vgg', 'resnet']:
@@ -43,7 +48,13 @@ def init_model_zoo(base_path: Path):
     return ModelZoo(models=models)
 
 
-def model_lookup(model_zoo: ModelZoo, label_set: LabelSetName, model_name: ModelName, frozen: bool):
+def model_lookup(model_zoo: ModelZoo,
+                 label_set: LabelSetName,
+                 model_name: ModelName,
+                 frozen: bool) -> Model:
+    """
+    Quickly find a model that corresponds to a certain configuration from the model zoo.
+    """
     for model in model_zoo.models:
         if model.label_set == label_set and model.model_name == model_name and model.frozen == frozen:
             return model
@@ -51,7 +62,11 @@ def model_lookup(model_zoo: ModelZoo, label_set: LabelSetName, model_name: Model
         return None
 
 
-def load_image(image_dataset: ImageDataset, sample_id: int):
+def load_image(image_dataset: ImageDataset,
+               sample_id: int) -> np.array:
+    """
+    Loads an image from disk and multiplies it with its ROI mask
+    """
     img = imread(image_dataset.image_paths[sample_id])
     mask = imread(image_dataset.roi_paths[sample_id])
     mask = (1 - (mask > 0).astype(np.uint8))

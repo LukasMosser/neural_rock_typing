@@ -1,19 +1,24 @@
-import param
-from holoviews.operation.datashader import rasterize
-import numpy as np
-from neural_rock.app.plot import create_holoviews_thinsection, create_holoviews_cam
-from imageio import imread
-import holoviews as hv
-from neural_rock.data_models import ImageDataset, ModelZoo, LabelSets
-from torchvision import transforms
-from pathlib import Path
-import torch
-import requests
 from json import loads
+from pathlib import Path
+import requests
+import numpy as np
+from imageio import imread
+import param
+import holoviews as hv
+from holoviews.operation.datashader import rasterize
+import torch
+from torchvision import transforms
+from neural_rock.data_models import ImageDataset, ModelZoo, LabelSets
+from neural_rock.app.plot import create_holoviews_thinsection, create_holoviews_cam
 hv.extension('bokeh')
 
 
 class ThinSectionViewer(param.Parameterized):
+    """
+    Base class for the thin-section viewer and the selection widgets.
+    Builds on Holoviews Panel and Holoviews Parameters to create parameters that are then turned into Widgets
+    throught the front end.
+    """
     Labelset_Name = param.ObjectSelector(default="Lucia", objects=["Dunham", 'Lucia', 'DominantPore'], check_on_set=True)
 
     Model_Selector = param.ObjectSelector(default="resnet", objects=['vgg', 'resnet'], check_on_set=True)
@@ -37,9 +42,12 @@ class ThinSectionViewer(param.Parameterized):
         self._update_class_names()
         self._get_available_image_ids()
         self.map = self.load_symbol
-        self.probs = self.make_map()[1]#np.zeros(len(self.param['Class_Name'].objects))
+        self.probs = self.make_map()[1]
 
     def _get_model_zoo(self) -> ModelZoo:
+        """
+        Calls API to retrieve available Models in Model Zoo
+        """
         with requests.Session() as s:
             result = s.get(self.server_address + 'models')
             r = loads(result.text)
@@ -47,6 +55,9 @@ class ThinSectionViewer(param.Parameterized):
         return model_zoo
 
     def _get_labelsets(self) -> LabelSets:
+        """
+        Calls API to retrieve available Labelsets
+        """
         with requests.Session() as s:
             result = s.get(self.server_address + 'labelsets')
             r = loads(result.text)
@@ -67,6 +78,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Labelset_Name', 'Model_Selector')
     def _get_available_image_ids(self):
+        """
+        Calls API to retrieve available Images for a given Labelset and Model
+        """
         with requests.Session() as s:
             result = s.get(self.server_address + 'dataset/sample_ids')
             r = loads(result.text)
@@ -91,6 +105,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Labelset_Name', 'Model_Selector', 'Frozen_Selector')
     def _get_train_test_config(self):
+        """
+        Calls API to retrieve the train test split for a specific trained model.
+        """
         with requests.Session() as s:
             result = s.get(self.server_address + 'get_train_test_images/{0:}/{1:}/{2:}'.format(self.Labelset_Name,
                                                                                                self.Model_Selector,
@@ -101,6 +118,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Model_Selector', watch=True)
     def _get_layer_ranges(self):
+        """
+        Calls API to retrieve available layer numbers for the CAM computation
+        """
         with requests.Session() as s:
             result = s.get(self.server_address + 'models/{0:}/valid_layer_range'.format(self.Model_Selector))
             r = loads(result.text)
@@ -113,6 +133,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Image_Name')
     def load_image(self):
+        """
+        Loads an image. Shoudld replace with other loading function in future.
+        """
         image_id = self.samples_text_map[self.Image_Name]
         try:
             X_np = imread(self.image_dataset.image_paths[image_id])
@@ -126,6 +149,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
     def make_map(self):
+        """
+        Calls API to generate a cam map for a given image, model, layer number and target class name.
+        """
         sample_id = self.samples_text_map[self.Image_Name]
         with requests.Session() as s:
             result = s.get(self.server_address + 'cam/{0:}/{1:}/{2:}/{3:}/{4:}/{5:}'.format(self.Labelset_Name,
@@ -142,6 +168,9 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Image_Name')
     def load_symbol(self):
+        """
+        Creates the CAM and Thin section holoviews objects to plot in the viewer.
+        """
         X_np = self.load_image()
         resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
         map, _ = self.make_map()
@@ -152,12 +181,18 @@ class ThinSectionViewer(param.Parameterized):
 
     @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
     def bar_plot(self):
+        """
+        Creates the bar plot for image probabilities
+        """
         data = [(clas, prob) for clas, prob in zip(self.param['Class_Name'].objects, self.probs)]
         bars = hv.Bars(data, hv.Dimension('Class Name'), 'Probability')
 
         return bars
 
     def view(self):
+        """
+        Initializes the viewer and provides the dynamically updating holoviews image viewer.
+        """
         thin_section = hv.DynamicMap(self.map)
 
         thin_section = rasterize(thin_section).opts(data_aspect=1.0, frame_height=600, frame_width=1000,
