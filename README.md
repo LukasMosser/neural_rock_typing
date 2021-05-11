@@ -1,5 +1,5 @@
 # Neural Rock
-## Do Machines See Rocks Like Geologists do?
+## Do Machines See Rocks Like Geologists Do?
 
 ### Authors
 
@@ -9,7 +9,7 @@ _Carbonate Complexities Group_, 2020
 ## Introduction
 
 This project aims to investigate the ability of neural networks to classify carbonate rocks from thin-sections for 
-various carbonate classification schemes. More importantly we seek to understand whether neural networks
+various carbonate classification schemes. More importantly, we seek to understand whether neural networks
 use similar visual and textural features to classify each image. 
 
 To investigate this we use the Gradient Class Activation Maps (GradCAM) [Distill.Pub Article](https://distill.pub/2020/attribution-baselines/) to show highlighting features
@@ -20,19 +20,19 @@ here pre-trained models and code infrastructure to train various convolutional n
 to visualize the CAM maps and the predictions of each network.
 
 Due to the extremely small dataset of ~80 images, a transfer learning approach was used to train ImageNet pretrained models.
-Because each image has dimensions of > 3000 x 2000 pixels we randomly extract patches at 224x224 pixels and feature preserving
+Because each image has dimensions of > 3000 x 2000 pixels, we randomly extract patches at 224x224 pixels and apply feature preserving
 data augmentation to regularize model training and to (hopefully) prevent overfitting. Regardless, results should be evaluated on the
-test-split of the datasets, indicated in the viewer app for each model.  
+test-splits of the datasets, indicated in the viewer app for each model.  
 
 ### Network types
 
 We provide pretrained ResNet18 and VGG11 models that either use ImageNet pretrained activations in the feature 
-extractor or have been fine-tuned i.e. training of the feature extractor with a very small learning rate.
+extractor or have been fine-tuned by training of the feature extractor with a very small learning rate.
 
 ## Neural Rock Application
 
 We provide a viewer application that allows inspection and visualization of the results.
-To run the application first install [Docker](https://docs.docker.com/compose/) and [Docker-Compose](https://docs.docker.com/compose/).
+To run the application first, install [Docker](https://docs.docker.com/compose/), and [Docker-Compose](https://docs.docker.com/compose/).
 
 Once finished start the application by calling:
 ```bash
@@ -45,10 +45,8 @@ You should be greeted by the following interface:
 ![Viewer](static/viewer.png)
 
 Here you can switch between different carbonate classification schemes (Labselset Name),
-different CNN architectures (Model Selector), whether to use a frozen or trained feature extractor 
-(Frozen Selector), the network layer to visualize for CAM maps (Network Layer Number), with respect 
-to which class you want to activate the network (Class Name), and finally a selection of all the images 
-in the dataset, with an indication on whether they were used in the training set, or not, as well as their 
+different CNN architectures (Model Selector), whether to use a frozen or a trained feature extractor 
+(Frozen Selector), and the network layer to visualize for CAM maps (Network Layer Number). You can select the class you want to activate the network (Class Name), and finally a selection of all the images in the dataset with an indication on whether they were used in the training set, or not, as well as their 
 ground-truth label, as identified by a carbonate geologist.
 
 A histogram of the predictions for the network is given below.  
@@ -72,12 +70,12 @@ Docker Images are hosted on [Dockerhub](https://hub.docker.com/repository/docker
 
 Interested viewers can also access the api that runs behind the scenes to serve model predictions.
 Navigate in your browser to [http://localhost:8000/docs](http://localhost:8000/docs) once the app is 
-running to see the OpenAPI specification. The API is build on [FastAPI](https://fastapi.tiangolo.com/)
+running to see the OpenAPI specification. The API is built on [FastAPI](https://fastapi.tiangolo.com/)
 
 ### Deploying on AWS
 
 For sharing we have used [Hashicorp Terraform](https://www.terraform.io/) to provide an Infrastructure as Code that will 
-deploy a worker on AWS EC2. This allows us to reduce manual work to be done to spin-up a machine to serve the model.  
+deploy a worker on AWS EC2. This allows us to reduce manual work for spinning-up a machine that serves the model.  
 Integrating an [Ansible Playbook](https://www.ansible.com/) could be considered future work.
 
 ### Model Training
@@ -103,9 +101,9 @@ Some initial testing has been done to incorporate [Captum](https://captum.ai/) t
 for CNNs, but there is no time left in the project to implement this currently.
 
 In terms of deployment, there is much room for improvement as the application does not "scale" currently.  
-The process of building a well-scaling application that builds on machine learning beyond the *How to deploy your sklearn model on AWS Lambda Tutoria* 
-is a non-trivial task especially if you can't make use of good inference libraries that take care of alot of that work for you.
-In our case, RAM requirements are quite high due to the need to backpropagate to get CAM maps and that puts special burden on deployment infrastructure.  
+The process of building a well-scaling application that builds on machine learning beyond the *How to deploy your sklearn model on AWS Lambda Tutorial* 
+is a non-trivial task especially if you can't make use of good inference libraries that take care of a lot of that work for you.
+In our case, RAM requirements are quite high due to the need for backpropagation to obtain the CAM maps. That puts special burden on deployment infrastructure.  
 Nevertheless, one could design a better system to scale out the API using AWS ECS or similar approaches, maybe even Lambda type functions.  
 Definitely something to learn for the future :) 
 
