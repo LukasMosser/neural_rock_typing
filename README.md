@@ -81,7 +81,7 @@ Integrating an [Ansible Playbook](https://www.ansible.com/) could be considered 
 ### Model Training
 
 To load a notebook for training a model in Google Colab, follow this link:  
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/notebooks/Neural_Rock_Typing_Sweep_Train_All_Models.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/LukasMosser/neural_rock_typing/blob/main/notebooks/Neural_Rock_Typing_Sweep_Train_All_Models.ipynb)
 
 _Update May 2021:_
 There seems to be an issue with Colab crashing due to incompatibility with Pytorch Lightning
