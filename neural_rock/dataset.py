@@ -129,7 +129,7 @@ class GPUThinSectionDataset(ThinSectionDataset):
         Preloads images into tensors on GPU memory.
         Requires pretty beefy GPU > 12 GB of memory for Leg194 dataset.
         """
-        for idx, img in self.dataset.images:
+        for idx, img in self.dataset.images.items():
             self.dataset.images[idx] = torch.from_numpy(img_as_float(img)).permute(2, 0, 1).cuda().half()
 
         sample_labels = self.labels.get_sample_labels_as_class_idx()
