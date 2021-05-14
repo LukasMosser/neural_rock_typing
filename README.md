@@ -126,6 +126,17 @@ Definitely something to learn for the future :)
 
 Unit and Integration Tests: The cake was a lie...
 
+## Data Acknowledgment
+
+This research used samples and data provided by the following dissertation:
+
+_Baechle, Gregor (2009): "Effects of pore structure on velocity and permeability in carbonate rocks" dissertation at Mathematisch-Naturwissenschaftliche Fakultät of Eberhard Karls University Tuebingen.
+http://hdl.handle.net/10900/49698_
+
+
+The image data for the PhD has been acquired while conducting research at the University of Miami, Comparative Sedimentology Laboratory.
+
+
 ## Credit and Thanks
 
 If you find this useful feel free to credit where appropriate.  
