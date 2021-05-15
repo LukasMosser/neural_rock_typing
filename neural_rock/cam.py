@@ -34,8 +34,8 @@ class FeatureExtractor(object):
 class ModelOutputs():
     """ Class for making a forward pass, and getting:
     1. The network output.
-    2. Activations from intermeddiate targetted layers.
-    3. Gradients from intermeddiate targetted layers. """
+    2. Activations from intermediate targeted layers.
+    3. Gradients from intermediate targeted layers. """
 
     def __init__(self, model, feature_module, target_layers):
         self.model = model
