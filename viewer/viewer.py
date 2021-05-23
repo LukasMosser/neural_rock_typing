@@ -30,7 +30,9 @@ control_app = pn.Param(
                 "Frozen_Selector",
                 "Network_Layer_Number",
                 "Class_Name",
-                "Image_Name"],
+                "Image_Name",
+                "Show_CAM",
+                "Alpha"],
     show_name=True
 )
 
@@ -58,9 +60,8 @@ CNN Feature Extractor Active (False), In-active (True)
 [Lukas Mosser](https://www.linkedin.com/in/lukas-mosser), [George Ghon](https://www.linkedin.com/in/george-g-30015639/), [Gregor Baechle](https://www.linkedin.com/in/gbaechle/)
 """
 layout_explorer = pn.Column(
-    pn.Row(pn.Column(control_app, explorer.bar_plot), pn.Column(explorer.view, sizing_mode='stretch_width')),
-    pn.Row(pn.pane.Markdown(howto_str, width=800), sizing_mode='stretch_width'), sizing_mode='stretch_width')
-
+    pn.Row(pn.Column(control_app), explorer.view),
+    pn.Row(pn.pane.Markdown(howto_str, width=800)), sizing_mode='stretch_width')
 css = '''
 .bk.bk-input {
     background-color: dimgray;
