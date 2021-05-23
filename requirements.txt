@@ -18,3 +18,4 @@ tqdm
 imageio
 albumentations
 pytorch_lightning
+seaborn
