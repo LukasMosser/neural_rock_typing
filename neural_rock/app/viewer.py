@@ -29,6 +29,8 @@ class ThinSectionViewer(param.Parameterized):
     Class_Name = param.ObjectSelector(default="default", objects=["default"], check_on_set=True)
 
     Image_Name = param.ObjectSelector(default="default", objects=["default"], check_on_set=True)
+    Show_CAM = param.Boolean(True, doc="Show CAM Map")
+    Alpha = param.Number(0.3, bounds=(0.0, 1.0), doc="CAM Alpha")
 
     def __init__(self, server_address: Path,
                  image_dataset: ImageDataset,
@@ -166,7 +168,7 @@ class ThinSectionViewer(param.Parameterized):
         self.probs = probs
         return map, probs
 
-    @param.depends('Image_Name')
+    @param.depends('Image_Name', 'Show_CAM', 'Alpha')
     def load_symbol(self):
         """
         Creates the CAM and Thin section holoviews objects to plot in the viewer.
@@ -175,9 +177,15 @@ class ThinSectionViewer(param.Parameterized):
         resize = transforms.Resize((X_np.shape[0], X_np.shape[1]))
         map, _ = self.make_map()
         map = resize(torch.from_numpy(map).unsqueeze(0)).numpy()[0]
-        hv_thinsection = create_holoviews_thinsection(X_np[::-1])
-        hv_cam = create_holoviews_cam(map.T).opts(alpha=0.5, cmap='inferno')
-        return hv_thinsection * hv_cam
+        hv_thinsection = create_holoviews_thinsection(X_np[::-1]).opts(label="Image")
+        hv_cam = create_holoviews_cam(map.T).opts(alpha=self.Alpha, cmap='inferno', label="CAM")
+
+        image = hv_thinsection
+
+        if self.Show_CAM:
+            image *= hv_cam
+
+        return image
 
     @param.depends('Image_Name', 'Model_Selector', 'Labelset_Name', 'Frozen_Selector', 'Class_Name')
     def bar_plot(self):
@@ -196,5 +204,5 @@ class ThinSectionViewer(param.Parameterized):
         thin_section = hv.DynamicMap(self.map)
 
         thin_section = rasterize(thin_section).opts(data_aspect=1.0, frame_height=600, frame_width=1000,
-                                                    active_tools=['xwheel_zoom', 'pan'])
+                                                    active_tools=['xwheel_zoom', 'pan']).opts({'plot': {'Overlay': {'tabs': True}}})
         return thin_section
