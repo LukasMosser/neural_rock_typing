@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Dict
 import torch.nn as nn
 import numpy as np
+import json
 import os
 from neural_rock.app.utils import make_cam_map
 from neural_rock.model import NeuralRockModel
@@ -40,6 +41,8 @@ label_sets = make_label_sets(df)
 # Load the Model zoo of available pretrained models
 model_zoo = init_model_zoo(base_path=base_path)
 
+with open(os.path.join(base_path, 'data/confusion_matrices/confusion_matrices.csv')) as json_file:
+    confusion_matrices = json.load(json_file)
 
 # Defines Routes below that specify the API
 
@@ -90,6 +93,13 @@ async def get_train_test_images(label_set: LabelSetName,
     model_config = model_lookup(model_zoo, label_set, model_name, frozen)
     return model_config.train_test_split
 
+@app.get("/confusion_matrices/{label_set}/{model_name}/{frozen}/")
+async def get_confusion_matrices(label_set: LabelSetName,
+                                  model_name: ModelName,
+                                  frozen: bool):
+    for conf_mat in confusion_matrices:
+        if conf_mat['model_name'] == model_name and conf_mat['frozen'] == frozen and conf_mat['label_set_name'] == label_set:
+            return conf_mat
 
 @app.get("/cam/{label_set}/{model_name}/{layer_id}/{frozen}/{sample_id}/{class_name}")
 async def compute_cam(label_set: LabelSetName,
