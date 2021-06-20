@@ -54,10 +54,11 @@ class ThinSectionViewer(param.Parameterized):
         self.image_dataset = image_dataset
         self.model_zoo = self._get_model_zoo()
         self.label_sets = self._get_labelsets()
-
+        self.current_sample_id = None
         self._get_layer_ranges()
         self._update_class_names()
         self._get_available_image_ids()
+
         self.map = self.load_symbol
         self.probs = self.make_map()[1]
         self.confusion_matrices = self._get_confusion_matrices(self.Labelset_Name, self.Model_Selector, self.Frozen_Selector)
@@ -109,9 +110,6 @@ class ThinSectionViewer(param.Parameterized):
 
         train_test_split = self._get_train_test_config()
 
-        #self.label_sets = self._get_labelsets()
-        #self._update_class_names()
-
         labels = self.label_sets.sets[self.Labelset_Name].sample_labels
         samples_text_map = {}
         for sample_id in r:
@@ -121,7 +119,16 @@ class ThinSectionViewer(param.Parameterized):
                 samples_text_map["{0:}-Test-True Class-{1:}".format(sample_id, labels[sample_id])] = sample_id
 
         self.samples_text_map = samples_text_map
-        self.param['Image_Name'].default = list(self.samples_text_map.keys())[0]
+        if self.current_sample_id is None:
+            logger.info("Setting default image")
+            self.param['Image_Name'].default = list(self.samples_text_map.keys())[0]
+            self.current_sample_id = int(self.param['Image_Name'].default.split("-")[0])
+        else:
+            logger.info("Setting image based on previous selection")
+            for key in self.samples_text_map.keys():
+                if int(key.split("-")[0]) == self.current_sample_id:
+                    self.param['Image_Name'].default = key
+
         self.param['Image_Name'].objects = list(self.samples_text_map.keys())
         self.Image_Name = self.param['Image_Name'].objects[0]
 
