@@ -127,8 +127,9 @@ class ThinSectionViewer(param.Parameterized):
             logger.info("Setting image based on previous selection")
             for key in self.samples_text_map.keys():
                 if int(key.split("-")[0]) == self.current_sample_id:
+                    logger.info("Found image based on previous selection")
                     self.param['Image_Name'].default = key
-
+                    self.current_sample_id = int(self.param['Image_Name'].default.split("-")[0])
         self.param['Image_Name'].objects = list(self.samples_text_map.keys())
         self.Image_Name = self.param['Image_Name'].objects[0]
 
@@ -146,7 +147,7 @@ class ThinSectionViewer(param.Parameterized):
 
         return r
 
-    @param.depends('Model_Selector')
+    @param.depends('Model_Selector', watch=True)
     def _get_layer_ranges(self):
         logger.info("Get _get_layer_ranges")
         """

@@ -76,3 +76,4 @@ layout = pn.template.ReactTemplate(
 layout.main[:, :] = layout_explorer
 
 layout.servable()
+layout.main.app('localhost:8888')
