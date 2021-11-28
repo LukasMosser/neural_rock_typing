@@ -9,6 +9,57 @@ from neural_rock.preprocess import load_label_dataframe
 from neural_rock.data_models import make_image_dataset, LabelSet, PreloadedImageDataset, GPUPreloadedImageDataset
 
 
+class SimpleThinSectionDataset(Dataset):
+    """
+    Base Pytorch Dataset for the Thin Section dataset in Neural Rock.
+    Currently only works with Leg194 data.
+    Optionally preloads all images to memory prior to running training process.
+    """
+
+    def __init__(self, base_path, df, img_type='Xppl', transform=None, gpu=False):
+        super(SimpleThinSectionDataset, self).__init__()
+        self.base_path = base_path
+        self.df = df
+        self.img_type = img_type
+        self.transform = transform
+        self.dataset = None
+        self.preload_dataset()
+
+    def __len__(self):
+        return len(self.df)
+
+    def preload_dataset(self):
+        self.dataset = {"X": [], "y": []}
+
+        for idx, row in self.df.iterrows():
+            X = imread(self.base_path + "/" + row[self.img_type])
+            y = torch.tensor(row['y'])
+            if gpu:
+                X = X.cuda()
+                y = y.cuda()
+            self.dataset['X'].append(X)
+
+            self.dataset['y'].append(y)
+
+    def __getitem__(self, idx):
+        """
+        Gets an image from the dataset, applies a transform (optional), and returns it.
+        """
+
+        X = self.dataset['X'][idx]
+
+        X = torch.from_numpy(img_as_float(X)).permute(2, 0, 1)
+
+        if self.transform:
+            X = self.transform(X)
+
+        return X.float(), self.dataset['y'][idx]
+
+    @property
+    def num_classes(self):
+        return len(self.dataset['X'])
+
+
 class ThinSectionDataset(Dataset):
     """
     Base Pytorch Dataset for the Thin Section dataset in Neural Rock.
